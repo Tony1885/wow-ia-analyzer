@@ -4,7 +4,7 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { calculateRealMetrics, validateCombatLog } from "@/lib/log-parser";
 import { parseLogsForGemini } from "@/lib/parse-logs";
 import { generateMockAnalysis } from "@/lib/mock-data";
@@ -47,45 +47,55 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
             model: "gemini-1.5-flash",
-            generationConfig: { responseMimeType: "application/json" }
+            generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.2,
+            },
+            // Disable safety filters for combat logs to avoid false positives (since logs contain "damage", "died", etc.)
+            safetySettings: [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            ]
         });
 
         const prompt = `
-            Tu es un coach expert de World of Warcraft Retail. Analyse ces événements de combat. 
-            Réponds uniquement au format JSON pur en suivant ce schéma :
+            Tu es un coach expert de World of Warcraft Retail (analyste de logs).
+            Analyse les données de combat fournies pour le joueur ${realPerformance.playerName}.
+            
+            Réponds UNIQUEMENT avec un objet JSON respectant ce schéma :
             {
-              "summary": "Résumé narratif de la performance (3 phrases)",
-              "strengths": ["Liste de 3 points forts"],
-              "improvements": [
-                { "area": "Domaine", "description": "Détails", "impact": "high", "priority": 1 }
-              ],
-              "overallGrade": "S | A | B | C | D",
-              "actionPlan": [
-                { "title": "Action", "description": "Détails concrets", "priority": 1, "category": "rotation" }
-              ],
-              "detailedAnalysis": "Analyse technique approfondie"
+              "summary": "Résumé de la performance",
+              "strengths": ["Force 1", "Force 2", "Force 3"],
+              "improvements": [{"area": "Domaine", "description": "Détails", "impact": "high", "priority": 1}],
+              "overallGrade": "S | A | B | C",
+              "actionPlan": [{"title": "Action", "description": "Détails concrets", "priority": 1, "category": "rotation"}],
+              "detailedAnalysis": "Analyse technique"
             }
 
-            DONNÉES DE COMBAT (RAW) :
+            DONNÉES :
             ${geminiContext}
-
-            IMPORTANT : Focalise-toi sur le joueur ${realPerformance.playerName} (${realPerformance.playerClass} ${realPerformance.playerSpec}).
         `;
 
-        console.log("[API] Envoi à Gemini 1.5 Flash...");
+        console.log("[API] Envoi à Gemini...");
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const textResult = response.text();
+
+        if (!textResult) {
+            throw new Error("Gemini n'a renvoyé aucun texte. Vérifiez les filtres de sécurité.");
+        }
+
         const aiInsight = JSON.parse(textResult);
 
-        // Retourner le résultat final
         return NextResponse.json({
             success: true,
             data: {
                 performance: realPerformance,
                 aiInsight: aiInsight,
                 encounter: {
-                    bossName: "Combat de Log",
+                    bossName: "Donjon / Raid",
                     difficulty: "Héroïque",
                     dungeonOrRaid: "Analyse Réelle",
                     duration: realPerformance.fightDuration,
@@ -94,18 +104,19 @@ export async function POST(request: NextRequest) {
                 metadata: {
                     analyzedAt: new Date().toISOString(),
                     logVersion: "12.1",
-                    eventsProcessed: 10000, // Approximate optimized context
+                    eventsProcessed: 10000,
                     model: "Gemini 1.5 Flash"
                 }
             }
         });
 
     } catch (error: any) {
-        console.error("[API] Erreur d'analyse Gemini:", error);
+        console.error("[API] Erreur Gemini:", error);
         return NextResponse.json({
             success: false,
-            error: "Une erreur est survenue lors de l'analyse avec Gemini. Vérifiez votre clé API ou la taille du log.",
-            details: error.message
+            error: "Erreur API Gemini",
+            details: error.message,
+            type: error.constructor.name
         }, { status: 500 });
     }
 }
