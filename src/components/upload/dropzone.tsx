@@ -62,12 +62,24 @@ export function Dropzone({ onFileAccepted, onTestMPlus, isProcessing }: Dropzone
             return;
         }
 
-        if (!charName || !server) return;
+        let finalCharName = charName.trim();
+        let finalServer = server.trim();
+
+        // --- Auto-split Name-Server ---
+        if (finalCharName.includes("-") && !finalServer) {
+            const parts = finalCharName.split("-");
+            finalCharName = parts[0];
+            finalServer = parts.slice(1).join("-");
+            setCharName(finalCharName);
+            setServer(finalServer);
+        }
+
+        if (!finalCharName || !finalServer) return;
         setIsSearching(true);
         setError(null);
         setSearchResults([]);
         try {
-            const res = await fetch(`/api/wcl/reports?name=${encodeURIComponent(charName)}&server=${encodeURIComponent(server)}&region=${region}`);
+            const res = await fetch(`/api/wcl/reports?name=${encodeURIComponent(finalCharName)}&server=${encodeURIComponent(finalServer)}&region=${region}`);
             const data = await res.json();
             if (data.success) {
                 setSearchResults(data.reports || []);
