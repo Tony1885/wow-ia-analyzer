@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, RotateCcw, Sparkles, AlertTriangle } from "lucide-react";
 import { AnalysisResult } from "@/lib/types";
 
 import { EncounterHeader } from "./encounter-header";
@@ -41,6 +41,23 @@ export function ResultsDashboard({ result, onReset }: ResultsDashboardProps) {
                     </span>
                 </div>
             </div>
+
+            {/* Notice Alert if API failed */}
+            {result.notice && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-3 rounded-xl bg-orange-500/10 p-4 text-sm text-orange-400 ring-1 ring-orange-500/20 shadow-lg shadow-orange-500/5"
+                >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500/20">
+                        <AlertTriangle className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <p className="font-bold">Analyse Limitée</p>
+                        <p className="opacity-80">{result.notice}</p>
+                    </div>
+                </motion.div>
+            )}
 
             {/* Encounter Header with Epic Entrance */}
             <motion.div

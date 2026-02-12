@@ -88,6 +88,7 @@ export interface AnalysisResult {
     aiInsight: AIInsight;
     encounter: EncounterInfo;
     metadata: AnalysisMetadata;
+    notice?: string;
 }
 
 export interface EncounterInfo {

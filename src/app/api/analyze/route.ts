@@ -12,10 +12,11 @@ import { generateMockAnalysis } from "@/lib/mock-data";
 export const maxDuration = 120; // 2 minutes timeout for Vercel
 
 export async function POST(request: NextRequest) {
+    let performanceStr = "";
     try {
         const formData = await request.formData();
         const geminiContext = formData.get("geminiContext") as string | null;
-        const performanceStr = formData.get("performance") as string | null;
+        performanceStr = formData.get("performance") as string || "";
         const anonymize = formData.get("anonymize") === "true";
         const demoMode = formData.get("demo") === "true";
 
@@ -36,10 +37,7 @@ export async function POST(request: NextRequest) {
 
         const apiKey = process.env.GOOGLE_AI_API_KEY;
         if (!apiKey) {
-            return NextResponse.json({
-                success: false,
-                error: "Clé API Gemini manquante. Veuillez configurer GOOGLE_AI_API_KEY dans vos variables d'environnement Vercel.",
-            }, { status: 500 });
+            throw new Error("Clé API Gemini manquante.");
         }
 
 
@@ -111,12 +109,43 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error("[API] Erreur Gemini:", error);
-        return NextResponse.json({
-            success: false,
-            error: "Erreur API Gemini",
-            details: error.message,
-            type: error.constructor.name
-        }, { status: 500 });
+        console.error("[API] Erreur Gemini (Fallback activé):", error);
+
+        // Final fallback: Use local analysis to avoid blocking the user
+        try {
+            if (!performanceStr) throw new Error("Pas de données de performance");
+            const realPerformance = JSON.parse(performanceStr);
+            const { generateLocalAnalysis } = require("@/lib/local-analyst");
+            const localInsight = generateLocalAnalysis(realPerformance);
+
+            return NextResponse.json({
+                success: true,
+                data: {
+                    performance: realPerformance,
+                    aiInsight: localInsight,
+                    encounter: {
+                        bossName: "Donjon / Raid",
+                        difficulty: "Héroïque",
+                        dungeonOrRaid: "Analyse Locale",
+                        duration: realPerformance.fightDuration,
+                        wipeOrKill: "Effectué",
+                    },
+                    metadata: {
+                        analyzedAt: new Date().toISOString(),
+                        logVersion: "12.1",
+                        eventsProcessed: 10000,
+                        model: "Offline Fallback",
+                        error: error.message
+                    }
+                },
+                notice: "L'IA Gemini est indisponible. Affichage de l'analyse locale de secours."
+            });
+        } catch (fallbackError) {
+            return NextResponse.json({
+                success: false,
+                error: "Désolé, l'analyse a échoué.",
+                details: error.message
+            }, { status: 500 });
+        }
     }
 }
