@@ -9,6 +9,7 @@ const RELEVANT_EVENTS = new Set([
     "SPELL_DAMAGE", "SPELL_PERIODIC_DAMAGE", "SWING_DAMAGE", "SWING_DAMAGE_LANDED", "RANGE_DAMAGE",
     "SPELL_HEAL", "SPELL_PERIODIC_HEAL", "SPELL_HEAL_ABSORBED",
     "SPELL_CAST_SUCCESS", "SPELL_CAST_START", "UNIT_DIED",
+    "SPELL_AURA_APPLIED", "SPELL_AURA_REMOVED", "SPELL_AURA_REFRESH",
     "ENCOUNTER_START", "ENCOUNTER_END", "COMBATANT_INFO", "CHALLENGE_MODE_START", "CHALLENGE_MODE_END"
 ]);
 
@@ -79,6 +80,8 @@ export function calculateRealMetrics(events: CombatLogEvent[], targetPlayerName?
     const stats: Record<string, { dmg: number; heal: number; events: number; lastTime: number; startTime: number; guid: string; name: string }> = {};
     const avoidableDamage: Record<string, { count: number; total: number }> = {};
     const timelineData: Record<number, { dps: number; hps: number }> = {};
+    const auraState: Record<string, Record<string, number>> = {}; // guid -> spellName -> lastApplied
+    const auraUptime: Record<string, Record<string, number>> = {}; // guid -> spellName -> totalDuration
 
     let dungeonName = "Donjon Mythique+";
     let bossName = "Plusieurs Boss";
@@ -167,6 +170,22 @@ export function calculateRealMetrics(events: CombatLogEvent[], targetPlayerName?
                 const bucket = Math.floor(time / 5000) * 5000;
                 if (timelineData[bucket]) timelineData[bucket].hps += amt;
             }
+        } else if (ev.eventType === "SPELL_AURA_APPLIED" || ev.eventType === "SPELL_AURA_REFRESH") {
+            const spellName = ev.rawData[1];
+            const destGuid = ev.destGUID;
+            if (destGuid && spellName && time > 0) {
+                if (!auraState[destGuid]) auraState[destGuid] = {};
+                auraState[destGuid][spellName] = time;
+            }
+        } else if (ev.eventType === "SPELL_AURA_REMOVED") {
+            const spellName = ev.rawData[1];
+            const destGuid = ev.destGUID;
+            if (destGuid && spellName && auraState[destGuid]?.[spellName] && time > 0) {
+                const duration = (time - auraState[destGuid][spellName]) / 1000;
+                if (!auraUptime[destGuid]) auraUptime[destGuid] = {};
+                auraUptime[destGuid][spellName] = (auraUptime[destGuid][spellName] || 0) + duration;
+                delete auraState[destGuid][spellName];
+            }
         }
     });
 
@@ -213,6 +232,24 @@ export function calculateRealMetrics(events: CombatLogEvent[], targetPlayerName?
         .sort((a, b) => b.totalDamage - a.totalDamage)
         .slice(0, 5);
 
+    // Finalize open auras for the main player
+    if (auraState[mainGUID]) {
+        Object.entries(auraState[mainGUID]).forEach(([spellName, startTime]) => {
+            const durationSec = (p.lastTime - startTime) / 1000;
+            if (!auraUptime[mainGUID]) auraUptime[mainGUID] = {};
+            auraUptime[mainGUID][spellName] = (auraUptime[mainGUID][spellName] || 0) + durationSec;
+        });
+    }
+
+    const buffs = Object.entries(auraUptime[mainGUID] || {})
+        .map(([name, totalSec]) => ({
+            buffName: name,
+            uptime: Math.min(100, Math.round((totalSec / duration) * 100)),
+            expectedUptime: 95, // Common baseline, Gemini can adjust
+        }))
+        .sort((a, b) => b.uptime - a.uptime)
+        .slice(0, 10);
+
     return {
         performance: {
             playerName: p.name,
@@ -226,7 +263,7 @@ export function calculateRealMetrics(events: CombatLogEvent[], targetPlayerName?
             fightDuration: Math.round(duration),
             percentile: 0,
             avoidableDamageTaken: avoidable,
-            buffUptime: [],
+            buffUptime: buffs,
             cooldownUsage: [],
             timeline: timeline
         },
@@ -277,7 +314,11 @@ export function validateCombatLog(content: string): { valid: boolean; error?: st
 
 export function summarizeForAI(events: CombatLogEvent[]): string {
     const { performance: p } = calculateRealMetrics(events);
-    return `PLAYER: ${p.playerName}\nDPS: ${p.dps}\nHEAL: ${p.totalHealing}\nDURATION: ${p.fightDuration}s`;
+    const uptimeStr = p.buffUptime
+        .slice(0, 3)
+        .map(b => `${b.buffName}: ${b.uptime}%`)
+        .join(", ");
+    return `PLAYER: ${p.playerName}\nDPS: ${p.dps}\nHEAL: ${p.totalHealing}\nDURATION: ${p.fightDuration}s\nBUFFS: ${uptimeStr}`;
 }
 
 /**

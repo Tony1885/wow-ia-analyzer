@@ -105,9 +105,6 @@ async function getWCLAccessToken(): Promise<string | null> {
     }
 }
 
-/**
- * Fetches recent reports for a character (Try v2 then v1 fallback)
- */
 export async function fetchCharacterReports(
     name: string,
     serverSlug: string,
@@ -115,6 +112,15 @@ export async function fetchCharacterReports(
 ): Promise<any[]> {
     const upperRegion = region.toUpperCase();
     const token = await getWCLAccessToken();
+
+    // Check if we have ANY credentials at all
+    const clientId = process.env.WCL_CLIENT_ID;
+    const clientSecret = process.env.WCL_CLIENT_SECRET || process.env.KEY_WACRAFTLOGS || process.env.KEY_WARCRAFTLOGS;
+
+    if (!clientId && !clientSecret) {
+        console.error("[WCL] CRITICAL: Missing API Credentials. Search will always fail.");
+        throw new Error("CONFIG_ERROR: Les clés API Warcraft Logs sont manquantes. Veuillez configurer WCL_CLIENT_ID et WCL_CLIENT_SECRET dans votre fichier .env");
+    }
 
     const tryFetch = async (charName: string) => {
         // --- Method 1: API v2 (GraphQL) ---
@@ -147,24 +153,18 @@ export async function fetchCharacterReports(
                     body: JSON.stringify({ query }),
                 });
                 const data = await res.json();
-
                 if (data.errors) {
                     console.error("[WCL] v2 GraphQL Errors:", data.errors);
                 }
-
                 const reports = data.data?.characterData?.character?.recentReports?.data;
-                if (reports && reports.length > 0) {
-                    console.log(`[WCL] Got ${reports.length} reports via v2`);
-                    return reports;
-                }
-                console.log(`[WCL] No reports found via v2 for ${charName}`);
+                if (reports && reports.length > 0) return reports;
             } catch (e) {
                 console.error("[WCL] v2 Error:", e);
             }
         }
 
         // --- Method 2: API v1 Fallback ---
-        const apiKey = process.env.KEY_WACRAFTLOGS || process.env.KEY_WARCRAFTLOGS || process.env.WCL_CLIENT_SECRET;
+        const apiKey = clientSecret; // Using the flexible secret here
         if (apiKey) {
             try {
                 const url = `https://www.warcraftlogs.com:443/v1/reports/character/${encodeURIComponent(charName)}/${encodeURIComponent(serverSlug)}/${encodeURIComponent(upperRegion)}?api_key=${apiKey}`;
@@ -173,7 +173,6 @@ export async function fetchCharacterReports(
                 if (res.ok) {
                     const data = await res.json();
                     if (data && data.length > 0) {
-                        console.log(`[WCL] Got ${data.length} reports via v1`);
                         return data.map((r: any) => ({
                             code: r.id,
                             startTime: r.start,
@@ -181,9 +180,6 @@ export async function fetchCharacterReports(
                             zone: { name: r.zoneName || "Inconnu" }
                         }));
                     }
-                } else {
-                    const errText = await res.text();
-                    console.error(`[WCL] v1 API Error: ${res.status} - ${errText}`);
                 }
             } catch (e) {
                 console.error("[WCL] v1 Fallback Error:", e);
@@ -192,11 +188,9 @@ export async function fetchCharacterReports(
         return null;
     };
 
-    // Try 1: As provided
     let results = await tryFetch(name);
     if (results && results.length > 0) return results;
 
-    // Try 2: Capitalized (Standard WoW name format)
     const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
     if (capitalizedName !== name) {
         results = await tryFetch(capitalizedName);

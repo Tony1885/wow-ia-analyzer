@@ -181,6 +181,11 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // --- UPTIME ANALYSIS SUMMARY ---
+        const uptimeSummary = (realPerformance.buffUptime || [])
+            .map((b: any) => `- ${b.buffName}: ${b.uptime}% (Cible: ${b.expectedUptime}%)`)
+            .join("\n") || "Aucune donnée d'uptime buff détectée.";
+
         const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
         if (!apiKey) {
             console.error("[API] No Gemini API key found in environment variables.");
@@ -215,6 +220,7 @@ export async function POST(request: NextRequest) {
             - Identifie la classe du joueur si non spécifiée (actuel: ${realPerformance.playerClass}).
             - Analyse sa rotation (priorités, séquences).
             - Identifie ses erreurs de placement ou mécaniques ratées.
+            - Analyse rigoureusement l'UPTIME des buffs et debuffs fournis ci-dessous.
             - Donne des conseils ultra-spécifiques.
             
             IMPORTANT : Si c'est du Mythic+ (M+), la priorité absolue est la survie et l'utilitaire. 
@@ -223,6 +229,9 @@ export async function POST(request: NextRequest) {
 
             DONNÉES WCL HISTORIQUES DU JOUEUR :
             ${wclSummary}
+
+            UPTIME DES SORTS CALCULÉ (LOGS ACTUELS) :
+            ${uptimeSummary}
 
             Réponds UNIQUEMENT avec un objet JSON respectant ce schéma :
             {
