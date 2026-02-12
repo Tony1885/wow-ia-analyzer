@@ -174,6 +174,7 @@ export function Dropzone({ onFileAccepted, onTestMPlus, isProcessing }: Dropzone
                                 placeholder="ex: Moussman"
                                 value={charName}
                                 onChange={(e) => setCharName(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                                 className="w-full rounded-lg bg-white/5 p-3 text-sm text-white ring-1 ring-white/10 transition-all focus:bg-white/10 focus:outline-none focus:ring-epic-500/50"
                             />
                         </div>
@@ -186,6 +187,7 @@ export function Dropzone({ onFileAccepted, onTestMPlus, isProcessing }: Dropzone
                                 placeholder="ex: Ysondre"
                                 value={server}
                                 onChange={(e) => setServer(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                                 className="w-full rounded-lg bg-white/5 p-3 text-sm text-white ring-1 ring-white/10 transition-all focus:bg-white/10 focus:outline-none focus:ring-epic-500/50"
                             />
                         </div>

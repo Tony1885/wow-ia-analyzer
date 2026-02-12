@@ -87,7 +87,7 @@ export function AIInsightCard({ insight }: AIInsightCardProps) {
                 <div className="relative rounded-xl bg-gradient-to-r from-epic-500/5 to-mana-500/5 p-5 ring-1 ring-white/5">
                     <Sparkles className="absolute right-4 top-4 h-4 w-4 text-epic-500/30" />
                     <p className="text-sm leading-relaxed text-gray-300">
-                        &ldquo;{insight.summary}&rdquo;
+                        &ldquo;{insight.summary || "Analyse en attente..."}&rdquo;
                     </p>
                 </div>
             </div>
@@ -99,7 +99,7 @@ export function AIInsightCard({ insight }: AIInsightCardProps) {
                     Points forts
                 </h4>
                 <div className="space-y-2">
-                    {insight.strengths.map((strength, i) => (
+                    {(insight.strengths || []).map((strength, i) => (
                         <motion.div
                             key={i}
                             initial={{ opacity: 0, x: -10 }}
@@ -121,7 +121,7 @@ export function AIInsightCard({ insight }: AIInsightCardProps) {
                     Axes d&apos;amélioration
                 </h4>
                 <div className="space-y-3">
-                    {insight.improvements.map((item, i) => (
+                    {(insight.improvements || []).map((item, i) => (
                         <motion.div
                             key={i}
                             initial={{ opacity: 0, x: -10 }}
@@ -135,10 +135,10 @@ export function AIInsightCard({ insight }: AIInsightCardProps) {
                                 </span>
                                 <span
                                     className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${item.impact === "high"
-                                            ? "bg-danger-500/10 text-danger-400"
-                                            : item.impact === "medium"
-                                                ? "bg-legendary-400/10 text-legendary-400"
-                                                : "bg-mana-400/10 text-mana-400"
+                                        ? "bg-danger-500/10 text-danger-400"
+                                        : item.impact === "medium"
+                                            ? "bg-legendary-400/10 text-legendary-400"
+                                            : "bg-mana-400/10 text-mana-400"
                                         }`}
                                 >
                                     Impact {item.impact === "high" ? "élevé" : item.impact === "medium" ? "moyen" : "faible"}

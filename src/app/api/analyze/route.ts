@@ -181,9 +181,13 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        const apiKey = process.env.GOOGLE_AI_API_KEY;
+        const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
         if (!apiKey) {
-            throw new Error("Clé API Gemini manquante.");
+            console.error("[API] No Gemini API key found in environment variables.");
+            return NextResponse.json({
+                success: false,
+                error: "Désolé, l'IA n'est pas configurée (Clé API manquante). Veuillez contacter l'administrateur."
+            }, { status: 500 });
         }
 
         // Initialisation de Gemini
@@ -237,10 +241,17 @@ export async function POST(request: NextRequest) {
         console.log("[API] Envoi à Gemini...");
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const textResult = response.text();
+        let textResult = response.text();
+
+        // Nettoyage Markdown JSON si présent
+        if (textResult.includes("```json")) {
+            textResult = textResult.split("```json")[1].split("```")[0].trim();
+        } else if (textResult.includes("```")) {
+            textResult = textResult.split("```")[1].split("```")[0].trim();
+        }
 
         if (!textResult) {
-            throw new Error("Gemini n'a renvoyé aucun texte. Vérifiez les filtres de sécurité.");
+            throw new Error("Gemini n'a renvoyé aucun texte exploitable.");
         }
 
         const aiInsight = JSON.parse(textResult);

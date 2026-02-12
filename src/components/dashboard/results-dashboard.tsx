@@ -35,7 +35,7 @@ export function ResultsDashboard({ result, onReset }: ResultsDashboardProps) {
                 </button>
                 <div className="flex items-center gap-3">
                     <span className="text-xs text-gray-600">
-                        {result.metadata.eventsProcessed.toLocaleString()} événements analysés
+                        {(result.metadata.eventsProcessed || 0).toLocaleString()} événements analysés
                     </span>
                     <span className="rounded-full bg-epic-500/10 px-2 py-0.5 text-[10px] font-medium text-epic-400 ring-1 ring-epic-500/20">
                         {result.metadata.model || "Gemini 1.5 Flash"}

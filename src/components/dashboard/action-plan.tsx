@@ -66,7 +66,7 @@ export function ActionPlan({ actions }: ActionPlanProps) {
                         Plan d&apos;action
                     </h3>
                     <p className="text-xs text-gray-500">
-                        Top {actions.length} axes d&apos;amélioration pour le prochain run
+                        Top {actions?.length || 0} axes d&apos;amélioration pour le prochain run
                     </p>
                 </div>
             </div>
