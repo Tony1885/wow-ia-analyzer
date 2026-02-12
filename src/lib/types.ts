@@ -104,6 +104,7 @@ export interface AnalysisMetadata {
     logVersion: string;
     eventsProcessed: number;
     anonymized: boolean;
+    model?: string;
 }
 
 export type WowClass =

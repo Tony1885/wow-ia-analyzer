@@ -8,15 +8,9 @@ import { ArrowLeft, RotateCcw } from "lucide-react";
 import { Navbar } from "@/components/layout/navigation";
 import { Dropzone } from "@/components/upload/dropzone";
 import { ProcessingOverlay } from "@/components/upload/processing-overlay";
-import { AIInsightCard } from "@/components/dashboard/ai-insight-card";
-import {
-    PerformanceMetrics,
-    AvoidableDamageList,
-    BuffUptimeList,
-} from "@/components/dashboard/performance-metrics";
-import { DpsTimelineChart } from "@/components/dashboard/dps-timeline-chart";
 import { ActionPlan } from "@/components/dashboard/action-plan";
 import { EncounterHeader } from "@/components/dashboard/encounter-header";
+import { ResultsDashboard } from "@/components/dashboard/results-dashboard";
 import { AnalysisResult, AnalysisState, UploadProgress } from "@/lib/types";
 
 export default function AnalyzePage() {
@@ -102,6 +96,7 @@ function AnalyzeContent() {
         async (file: File, anonymize: boolean) => {
             try {
                 setError(null);
+                console.log("[WoWAnalyzer] Starting analysis for:", file.name, file.size, "bytes");
 
                 // Stage 1: Upload (0→30%)
                 setAnalysisState("uploading");
@@ -126,7 +121,6 @@ function AnalyzeContent() {
                 await new Promise((r) => setTimeout(r, 2000));
 
                 // Stage 3: AI Analysis (55→92%)
-                // Start the API call AND the progress animation in PARALLEL
                 setAnalysisState("analyzing");
                 setProgress((prev) => ({
                     ...prev,
@@ -136,29 +130,56 @@ function AnalyzeContent() {
                     subMessage: "Intelligence artificielle en action 🧠",
                 }));
 
-                // Animate progress smoothly from 55% to 92% over 15 seconds
-                // This runs independently — the API call won't block the animation
-                startProgressAnimation(55, 92, 15000);
+                // Animate progress from 55% to 92% while the API call runs
+                startProgressAnimation(55, 92, 20000);
 
-                // Launch the API call
+                // Launch the API call with a timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
+
                 const formData = new FormData();
                 formData.append("logFile", file);
                 formData.append("anonymize", anonymize.toString());
 
-                const response = await fetch("/api/analyze", {
-                    method: "POST",
-                    body: formData,
-                });
-
-                // Stop the independent animation
+                let response: Response;
+                try {
+                    response = await fetch("/api/analyze", {
+                        method: "POST",
+                        body: formData,
+                        signal: controller.signal,
+                    });
+                } catch (fetchErr: any) {
+                    clearTimeout(timeoutId);
+                    stopProgressAnimation();
+                    if (fetchErr?.name === "AbortError") {
+                        throw new Error("L'analyse a pris trop de temps. Essayez avec un log plus petit (un seul boss).");
+                    }
+                    throw new Error("Impossible de contacter le serveur. Vérifiez que le serveur tourne.");
+                }
+                clearTimeout(timeoutId);
                 stopProgressAnimation();
 
+                console.log("[WoWAnalyzer] API response status:", response.status);
+
+                // Handle error responses
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Erreur serveur");
+                    let errorMsg = "Erreur serveur";
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorMsg;
+                    } catch {
+                        errorMsg = `Erreur serveur(${response.status})`;
+                    }
+                    throw new Error(errorMsg);
                 }
 
+                // Parse response
                 const data = await response.json();
+                console.log("[WoWAnalyzer] API response received:", data.success, data.demo ? "(demo mode)" : "(real AI)");
+
+                if (!data.success || !data.data) {
+                    throw new Error("Réponse invalide du serveur. Veuillez réessayer.");
+                }
 
                 // Finalization (92→100%)
                 setProgress({
@@ -169,8 +190,8 @@ function AnalyzeContent() {
                 });
                 startProgressAnimation(92, 100, 800);
                 await new Promise((r) => setTimeout(r, 800));
-
                 stopProgressAnimation();
+
                 setResult(data.data);
 
                 // Complete
@@ -184,6 +205,7 @@ function AnalyzeContent() {
 
                 await new Promise((r) => setTimeout(r, 500));
             } catch (err) {
+                console.error("[WoWAnalyzer] Analysis failed:", err);
                 stopProgressAnimation();
                 setAnalysisState("error");
                 setError(
@@ -390,71 +412,7 @@ function AnalyzeContent() {
 
                         {/* ===================== RESULTS STATE ===================== */}
                         {result && analysisState === "complete" && (
-                            <motion.div
-                                key="results"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="space-y-6 py-8"
-                            >
-                                {/* Top bar */}
-                                <div className="flex items-center justify-between">
-                                    <button
-                                        onClick={handleReset}
-                                        className="flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-white"
-                                    >
-                                        <ArrowLeft className="h-4 w-4" />
-                                        Nouvelle analyse
-                                    </button>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs text-gray-600">
-                                            {result.metadata.eventsProcessed.toLocaleString()}{" "}
-                                            événements analysés
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Encounter Header */}
-                                <EncounterHeader
-                                    encounter={result.encounter}
-                                    performance={result.performance}
-                                />
-
-                                {/* Performance Metrics */}
-                                <PerformanceMetrics performance={result.performance} />
-
-                                {/* AI Insight + Timeline row */}
-                                <div className="grid gap-6 lg:grid-cols-2">
-                                    <AIInsightCard insight={result.aiInsight} />
-                                    <DpsTimelineChart
-                                        timeline={result.performance.timeline}
-                                        averageDps={result.performance.dps}
-                                    />
-                                </div>
-
-                                {/* Avoidable Damage + Buff Uptime */}
-                                <div className="grid gap-6 lg:grid-cols-2">
-                                    <AvoidableDamageList
-                                        damages={result.performance.avoidableDamageTaken}
-                                    />
-                                    <BuffUptimeList
-                                        buffs={result.performance.buffUptime}
-                                    />
-                                </div>
-
-                                {/* Action Plan */}
-                                <ActionPlan actions={result.aiInsight.actionPlan} />
-
-                                {/* Bottom actions */}
-                                <div className="flex justify-center gap-4 pt-8">
-                                    <button
-                                        onClick={handleReset}
-                                        className="btn-glow flex items-center gap-2 text-sm"
-                                    >
-                                        <RotateCcw className="h-4 w-4" />
-                                        Analyser un autre log
-                                    </button>
-                                </div>
-                            </motion.div>
+                            <ResultsDashboard result={result} onReset={handleReset} />
                         )}
                     </AnimatePresence>
                 </div>
