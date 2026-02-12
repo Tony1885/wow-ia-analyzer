@@ -19,7 +19,7 @@ export function BuildModule() {
             const res = await fetch("/api/chat", {
                 method: "POST",
                 body: JSON.stringify({
-                    message: `Analyse ce code de talents Blizzard et suggère des optimisations : ${code}`,
+                    message: `Identifie la classe, la spécialisation et si c'est un build Raid ou M+. Analyse ensuite les synergies et donne la rotation optimale pour ce build : ${code}`,
                     mode: "build"
                 }),
                 headers: { "Content-Type": "application/json" }

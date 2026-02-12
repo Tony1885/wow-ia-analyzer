@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WoW AI Analyzer — Optimise ton build de talents",
+  title: "WoW Analyzeur AI — Optimise ton build de talents",
   description:
     "Analyseur de talents intelligent pour WoW Retail. Décrypte tes codes Blizzard et reçois une rotation optimale générée par l'IA.",
   keywords: [
