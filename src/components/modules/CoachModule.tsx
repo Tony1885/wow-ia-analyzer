@@ -29,9 +29,10 @@ export function CoachModule() {
                 headers: { "Content-Type": "application/json" }
             })
             const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Erreur API")
             setMessages(prev => [...prev, { role: "ai", content: data.text }])
-        } catch (error) {
-            setMessages(prev => [...prev, { role: "ai", content: "Désolé, j'ai rencontré une erreur technique." }])
+        } catch (error: any) {
+            setMessages(prev => [...prev, { role: "ai", content: `Désolé, j'ai rencontré une erreur : ${error.message}.` }])
         } finally {
             setIsLoading(false)
         }
@@ -54,8 +55,8 @@ export function CoachModule() {
                                     {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
                                 </div>
                                 <div className={`p-4 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
-                                        ? "bg-violet-600/20 text-white rounded-tr-none border border-violet-500/20"
-                                        : "bg-slate-900/50 text-gray-200 rounded-tl-none border border-white/5"
+                                    ? "bg-violet-600/20 text-white rounded-tr-none border border-violet-500/20"
+                                    : "bg-slate-900/50 text-gray-200 rounded-tl-none border border-white/5"
                                     }`}>
                                     {msg.content}
                                 </div>

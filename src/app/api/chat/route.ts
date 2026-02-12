@@ -4,28 +4,45 @@ import { SYSTEM_PROMPTS } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
     try {
-        const { message, mode } = await request.json();
+        const body = await request.json();
+        const { message, mode } = body;
 
-        const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+        console.log(`[Chat API] Mode: ${mode}, Message length: ${message?.length}`);
+
+        const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY;
         if (!apiKey) {
-            return NextResponse.json({ error: "Clé API manquante" }, { status: 500 });
+            console.error("[Chat API] Missing API Key in ENV");
+            return NextResponse.json({ error: "Clé API manquante dans les variables d'environnement Vercel." }, { status: 500 });
         }
 
         const systemPrompt = SYSTEM_PROMPTS[mode as keyof typeof SYSTEM_PROMPTS] || SYSTEM_PROMPTS.coach;
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            systemInstruction: systemPrompt
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // On utilise l'historique pour injecter le prompt système de manière robuste
+        const chat = model.startChat({
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: "Consigne système : " + systemPrompt }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "Compris. Je suis prêt à t'aider en suivant ces instructions." }],
+                },
+            ],
         });
 
-        const result = await model.generateContent(message);
-        const response = await result.response;
-        const text = response.text();
+        const result = await chat.sendMessage(message);
+        const text = result.response.text();
 
         return NextResponse.json({ text });
-    } catch (error) {
-        console.error("Chat API Error:", error);
-        return NextResponse.json({ error: "Erreur lors de la génération" }, { status: 500 });
+    } catch (error: any) {
+        console.error("Chat API Detailed Error:", error);
+        return NextResponse.json({
+            error: "Erreur lors de la génération de la réponse.",
+            details: error.message
+        }, { status: 500 });
     }
 }

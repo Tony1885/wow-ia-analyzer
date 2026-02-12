@@ -25,9 +25,10 @@ export function BuildModule() {
                 headers: { "Content-Type": "application/json" }
             })
             const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Erreur API")
             setAnalysis(data.text)
-        } catch (error) {
-            setAnalysis("Erreur lors de l'analyse du build.")
+        } catch (error: any) {
+            setAnalysis(`Erreur : ${error.message}. Vérifie tes clés API sur Vercel.`);
         } finally {
             setIsLoading(false)
         }

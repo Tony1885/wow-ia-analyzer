@@ -26,9 +26,10 @@ export function ForgeModule() {
                 headers: { "Content-Type": "application/json" }
             })
             const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Erreur API")
             setMacro(data.text)
-        } catch (error) {
-            setMacro("Erreur lors du forgeage de la macro.")
+        } catch (error: any) {
+            setMacro(`Erreur : ${error.message}.`);
         } finally {
             setIsLoading(false)
         }
