@@ -30,10 +30,10 @@ export function PerformanceMetrics({ performance }: PerformanceMetricsProps) {
         },
         {
             label: "Durée",
-            value: `${Math.floor(performance.fightDuration / 60)}:${(
-                performance.fightDuration % 60
+            value: `${Math.floor((performance.fightDuration || 0) / 60)}:${(
+                (performance.fightDuration || 0) % 60
             )
-                .toString()
+                .toFixed(0)
                 .padStart(2, "0")}`,
             icon: <Clock className="h-5 w-5" />,
             color: "text-mana-400",
@@ -137,10 +137,10 @@ export function AvoidableDamageList({ damages }: AvoidableDamageListProps) {
                             <div className="flex items-center gap-3">
                                 <div
                                     className={`h-2 w-2 rounded-full ${damage.severity === "critical"
-                                            ? "bg-danger-400 shadow-[0_0_6px_rgba(248,113,113,0.5)]"
-                                            : damage.severity === "warning"
-                                                ? "bg-legendary-400 shadow-[0_0_6px_rgba(251,191,36,0.5)]"
-                                                : "bg-mana-400"
+                                        ? "bg-danger-400 shadow-[0_0_6px_rgba(248,113,113,0.5)]"
+                                        : damage.severity === "warning"
+                                            ? "bg-legendary-400 shadow-[0_0_6px_rgba(251,191,36,0.5)]"
+                                            : "bg-mana-400"
                                         }`}
                                 />
                                 <span className="font-medium text-white">
@@ -212,10 +212,10 @@ export function BuffUptimeList({ buffs }: BuffUptimeListProps) {
                                 </span>
                                 <span
                                     className={`font-mono text-sm font-semibold ${isGood
-                                            ? "text-healing-400"
-                                            : isOkay
-                                                ? "text-legendary-400"
-                                                : "text-danger-400"
+                                        ? "text-healing-400"
+                                        : isOkay
+                                            ? "text-legendary-400"
+                                            : "text-danger-400"
                                         }`}
                                 >
                                     {formatPercentage(buff.uptime)}
@@ -227,10 +227,10 @@ export function BuffUptimeList({ buffs }: BuffUptimeListProps) {
                                     animate={{ width: `${buff.uptime}%` }}
                                     transition={{ duration: 1, delay: 0.6 + i * 0.1 }}
                                     className={`h-full rounded-full ${isGood
-                                            ? "bg-gradient-to-r from-healing-500 to-healing-400"
-                                            : isOkay
-                                                ? "bg-gradient-to-r from-legendary-500 to-legendary-400"
-                                                : "bg-gradient-to-r from-danger-500 to-danger-400"
+                                        ? "bg-gradient-to-r from-healing-500 to-healing-400"
+                                        : isOkay
+                                            ? "bg-gradient-to-r from-legendary-500 to-legendary-400"
+                                            : "bg-gradient-to-r from-danger-500 to-danger-400"
                                         }`}
                                 />
                             </div>

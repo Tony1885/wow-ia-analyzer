@@ -56,10 +56,18 @@ export async function POST(request: NextRequest) {
             const realPerformance = {
                 playerName: cleaned.sourceName,
                 playerClass: "Warrior", // Fallback, Gemini will refine
+                playerSpec: "Inconnu",
                 role: "DPS",
                 dps: 0,
                 totalDamage: 0,
+                totalHealing: 0,
+                hps: 0,
                 fightDuration: 0,
+                percentile: 0,
+                avoidableDamageTaken: [],
+                buffUptime: [],
+                cooldownUsage: [],
+                timeline: [],
                 rawStats: cleaned.stats
             };
             const realEncounter = {
@@ -100,9 +108,18 @@ export async function POST(request: NextRequest) {
             const realPerformance = {
                 playerName: targetPlayerName,
                 playerClass: playerData?.type || "Warrior",
+                playerSpec: playerData?.spec || "Inconnu",
+                role: (playerData?.role || "DPS") as "DPS" | "Healer" | "Tank",
                 dps: playerData?.total ? Math.round(playerData.total / (lastFight ? (lastFight.endTime - lastFight.startTime) / 1000 : 1)) : 0,
                 totalDamage: playerData?.total || 0,
+                totalHealing: 0,
+                hps: 0,
                 fightDuration: lastFight ? (lastFight.endTime - lastFight.startTime) / 1000 : 0,
+                percentile: 0,
+                avoidableDamageTaken: [],
+                buffUptime: [],
+                cooldownUsage: [],
+                timeline: []
             };
 
             const realEncounter = {

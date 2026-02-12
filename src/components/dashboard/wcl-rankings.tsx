@@ -61,7 +61,7 @@ export function WCLRankingsCard({ rankings }: WCLRankingsProps) {
                                 <p className="text-[10px] uppercase tracking-tighter text-gray-500">Percentile</p>
                             </div>
                             <div className="text-right sm:block hidden">
-                                <p className="text-sm font-bold text-white">{(rank.amount / 1000).toFixed(1)}k</p>
+                                <p className="text-sm font-bold text-white">{(rank.amount ? rank.amount / 1000 : 0).toFixed(1)}k</p>
                                 <p className="text-[10px] uppercase tracking-tighter text-gray-500">Amount</p>
                             </div>
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 transition-colors group-hover:bg-epic-500/20">

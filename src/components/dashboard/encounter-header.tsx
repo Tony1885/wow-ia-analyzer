@@ -23,8 +23,9 @@ export function EncounterHeader({
     performance,
 }: EncounterHeaderProps) {
     const classInfo = CLASS_DATA[performance.playerClass];
-    const mins = Math.floor(encounter.duration / 60);
-    const secs = encounter.duration % 60;
+    const duration = encounter.duration || 0;
+    const mins = Math.floor(duration / 60);
+    const secs = Math.floor(duration % 60);
 
     return (
         <motion.div
@@ -74,8 +75,8 @@ export function EncounterHeader({
                         {/* Kill / Wipe */}
                         <span
                             className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${encounter.wipeOrKill === "Kill"
-                                    ? "bg-healing-400/10 text-healing-400 ring-healing-400/20"
-                                    : "bg-danger-400/10 text-danger-400 ring-danger-400/20"
+                                ? "bg-healing-400/10 text-healing-400 ring-healing-400/20"
+                                : "bg-danger-400/10 text-danger-400 ring-danger-400/20"
                                 }`}
                         >
                             {encounter.wipeOrKill === "Kill" ? "✓ Kill" : "✗ Wipe"}
