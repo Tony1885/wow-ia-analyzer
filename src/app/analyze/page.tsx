@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, Suspense } from "react";
+import React, { useState, useCallback, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, RotateCcw } from "lucide-react";
@@ -49,89 +49,98 @@ function AnalyzeContent() {
     });
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Auto-start demo mode
     useEffect(() => {
         if (isDemo && analysisState === "idle") {
             handleDemo();
         }
+        return () => {
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isDemo]);
 
-    const simulateProgress = useCallback(
-        async (
-            stages: Array<{
-                state: AnalysisState;
-                message: string;
-                subMessage?: string;
-                targetProgress: number;
-                duration: number;
-            }>
-        ) => {
-            for (const stage of stages) {
-                setAnalysisState(stage.state);
-                setProgress({
-                    state: stage.state,
-                    progress: stage.targetProgress - 20,
-                    message: stage.message,
-                    subMessage: stage.subMessage,
-                });
-
-                // Animate progress
-                const steps = 20;
-                const stepDuration = stage.duration / steps;
-                for (let i = 0; i < steps; i++) {
-                    await new Promise((r) => setTimeout(r, stepDuration));
-                    setProgress((prev) => ({
-                        ...prev,
-                        progress: Math.min(
-                            stage.targetProgress,
-                            prev.progress + (20 / steps)
-                        ),
-                    }));
-                }
+    // Smooth progress animation that runs independently of the API call
+    const startProgressAnimation = useCallback(
+        (fromProgress: number, toProgress: number, durationMs: number) => {
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
             }
+            const steps = 60;
+            const stepDuration = durationMs / steps;
+            const increment = (toProgress - fromProgress) / steps;
+            let currentStep = 0;
+
+            progressIntervalRef.current = setInterval(() => {
+                currentStep++;
+                setProgress((prev) => ({
+                    ...prev,
+                    progress: Math.min(toProgress, fromProgress + increment * currentStep),
+                }));
+                if (currentStep >= steps) {
+                    if (progressIntervalRef.current) {
+                        clearInterval(progressIntervalRef.current);
+                    }
+                }
+            }, stepDuration);
         },
         []
     );
+
+    const stopProgressAnimation = useCallback(() => {
+        if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+        }
+    }, []);
 
     const handleFileAccepted = useCallback(
         async (file: File, anonymize: boolean) => {
             try {
                 setError(null);
 
-                // Stage 1: Upload
-                await simulateProgress([
-                    {
-                        state: "uploading",
-                        message: "Upload du log en cours...",
-                        subMessage: file.name,
-                        targetProgress: 30,
-                        duration: 1500,
-                    },
-                ]);
-
-                // Stage 2: Parsing
-                await simulateProgress([
-                    {
-                        state: "parsing",
-                        message: "Parsing des événements de combat...",
-                        subMessage: "Extraction des données pertinentes",
-                        targetProgress: 55,
-                        duration: 2000,
-                    },
-                ]);
-
-                // Stage 3: AI Analysis
-                setAnalysisState("analyzing");
+                // Stage 1: Upload (0→30%)
+                setAnalysisState("uploading");
                 setProgress({
-                    state: "analyzing",
-                    progress: 60,
-                    message: "L'IA analyse tes performances...",
-                    subMessage: "GPT-4o en action 🧠",
+                    state: "uploading",
+                    progress: 0,
+                    message: "Upload du log en cours...",
+                    subMessage: `${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} Mo)`,
                 });
+                startProgressAnimation(0, 30, 1500);
+                await new Promise((r) => setTimeout(r, 1500));
 
-                // Send to API
+                // Stage 2: Parsing (30→55%)
+                setAnalysisState("parsing");
+                setProgress((prev) => ({
+                    ...prev,
+                    state: "parsing",
+                    message: "Parsing des événements de combat...",
+                    subMessage: "Extraction des données pertinentes",
+                }));
+                startProgressAnimation(30, 55, 2000);
+                await new Promise((r) => setTimeout(r, 2000));
+
+                // Stage 3: AI Analysis (55→92%)
+                // Start the API call AND the progress animation in PARALLEL
+                setAnalysisState("analyzing");
+                setProgress((prev) => ({
+                    ...prev,
+                    state: "analyzing",
+                    progress: 55,
+                    message: "Claude analyse tes performances...",
+                    subMessage: "Intelligence artificielle en action 🧠",
+                }));
+
+                // Animate progress smoothly from 55% to 92% over 15 seconds
+                // This runs independently — the API call won't block the animation
+                startProgressAnimation(55, 92, 15000);
+
+                // Launch the API call
                 const formData = new FormData();
                 formData.append("logFile", file);
                 formData.append("anonymize", anonymize.toString());
@@ -141,23 +150,27 @@ function AnalyzeContent() {
                     body: formData,
                 });
 
+                // Stop the independent animation
+                stopProgressAnimation();
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || "Erreur serveur");
                 }
 
-                // Animate last progress steps
-                await simulateProgress([
-                    {
-                        state: "analyzing",
-                        message: "Finalisation de l'analyse...",
-                        subMessage: "Génération du plan d'action",
-                        targetProgress: 95,
-                        duration: 1500,
-                    },
-                ]);
-
                 const data = await response.json();
+
+                // Finalization (92→100%)
+                setProgress({
+                    state: "analyzing",
+                    progress: 92,
+                    message: "Finalisation de l'analyse...",
+                    subMessage: "Génération du plan d'action",
+                });
+                startProgressAnimation(92, 100, 800);
+                await new Promise((r) => setTimeout(r, 800));
+
+                stopProgressAnimation();
                 setResult(data.data);
 
                 // Complete
@@ -166,50 +179,59 @@ function AnalyzeContent() {
                     state: "complete",
                     progress: 100,
                     message: "Analyse terminée !",
-                    subMessage: "Tes résultats sont prêts",
+                    subMessage: data.notice || "Tes résultats sont prêts",
                 });
 
-                // Small delay before showing results
-                await new Promise((r) => setTimeout(r, 800));
+                await new Promise((r) => setTimeout(r, 500));
             } catch (err) {
+                stopProgressAnimation();
                 setAnalysisState("error");
                 setError(
                     err instanceof Error ? err.message : "Une erreur inattendue est survenue"
                 );
             }
         },
-        [simulateProgress]
+        [startProgressAnimation, stopProgressAnimation]
     );
 
     const handleDemo = useCallback(async () => {
         try {
             setError(null);
 
-            await simulateProgress([
-                {
-                    state: "uploading",
-                    message: "Chargement du log de démonstration...",
-                    subMessage: "WoWCombatLog_Demo.txt",
-                    targetProgress: 30,
-                    duration: 1000,
-                },
-                {
-                    state: "parsing",
-                    message: "Parsing des événements...",
-                    subMessage: "145 872 événements détectés",
-                    targetProgress: 55,
-                    duration: 1500,
-                },
-                {
-                    state: "analyzing",
-                    message: "L'IA analyse le combat...",
-                    subMessage: "Reine Ansurek — Héroïque",
-                    targetProgress: 90,
-                    duration: 2000,
-                },
-            ]);
+            // Stage 1: Upload
+            setAnalysisState("uploading");
+            setProgress({
+                state: "uploading",
+                progress: 0,
+                message: "Chargement du log de démonstration...",
+                subMessage: "WoWCombatLog_Demo.txt",
+            });
+            startProgressAnimation(0, 30, 1000);
+            await new Promise((r) => setTimeout(r, 1000));
 
-            // Get demo data
+            // Stage 2: Parsing
+            setAnalysisState("parsing");
+            setProgress((prev) => ({
+                ...prev,
+                state: "parsing",
+                message: "Parsing des événements...",
+                subMessage: "145 872 événements détectés",
+            }));
+            startProgressAnimation(30, 55, 1500);
+            await new Promise((r) => setTimeout(r, 1500));
+
+            // Stage 3: AI Analysis — parallel animation + API call
+            setAnalysisState("analyzing");
+            setProgress((prev) => ({
+                ...prev,
+                state: "analyzing",
+                progress: 55,
+                message: "Claude analyse le combat...",
+                subMessage: "Gallywix — Mythique",
+            }));
+            startProgressAnimation(55, 92, 4000);
+
+            // API call
             const response = await fetch("/api/analyze", {
                 method: "POST",
                 body: (() => {
@@ -219,7 +241,20 @@ function AnalyzeContent() {
                 })(),
             });
 
+            stopProgressAnimation();
             const data = await response.json();
+
+            // Finalization
+            setProgress({
+                state: "analyzing",
+                progress: 92,
+                message: "Finalisation...",
+                subMessage: "Génération du rapport",
+            });
+            startProgressAnimation(92, 100, 600);
+            await new Promise((r) => setTimeout(r, 600));
+
+            stopProgressAnimation();
             setResult(data.data);
 
             setAnalysisState("complete");
@@ -229,19 +264,21 @@ function AnalyzeContent() {
                 message: "Analyse terminée !",
             });
 
-            await new Promise((r) => setTimeout(r, 600));
+            await new Promise((r) => setTimeout(r, 400));
         } catch (err) {
+            stopProgressAnimation();
             setAnalysisState("error");
             setError("Erreur lors du chargement de la démo");
         }
-    }, [simulateProgress]);
+    }, [startProgressAnimation, stopProgressAnimation]);
 
     const handleReset = useCallback(() => {
+        stopProgressAnimation();
         setAnalysisState("idle");
         setResult(null);
         setError(null);
         setProgress({ state: "idle", progress: 0, message: "" });
-    }, []);
+    }, [stopProgressAnimation]);
 
     return (
         <>

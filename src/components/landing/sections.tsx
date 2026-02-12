@@ -47,7 +47,7 @@ export function HeroSection() {
                 >
                     <span className="inline-flex items-center gap-2 rounded-full bg-epic-500/10 px-4 py-2 text-sm font-medium text-epic-400 ring-1 ring-epic-500/20">
                         <Sparkles className="h-4 w-4" />
-                        Propulsé par l&apos;IA — Patch 11.0.x compatible
+                        Propulsé par Claude IA — Patch 12.1 compatible
                     </span>
                 </motion.div>
 
@@ -157,7 +157,7 @@ const steps = [
         step: "02",
         title: "L'IA analyse ton combat",
         description:
-            "Notre moteur parse tes événements et envoie les données pertinentes à GPT-4o pour une analyse experte.",
+            "Notre moteur parse tes événements et envoie les données pertinentes à Claude Sonnet 4 pour une analyse experte et ultra-précise.",
         icon: <Brain className="h-7 w-7" />,
         color: "from-epic-500 to-epic-600",
         glowColor: "rgba(139, 92, 246, 0.2)",
@@ -357,16 +357,16 @@ export function TrustBar() {
                     className="flex flex-col items-center gap-6 text-center"
                 >
                     <p className="text-sm font-medium text-gray-500">
-                        Compatible avec le contenu actuel de{" "}
-                        <span className="text-white">The War Within</span>
+                        Compatible avec le contenu actuel —{" "}
+                        <span className="text-white">Patch 12.1</span>
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-4">
                         {[
-                            "Palais de Nerub-ar",
+                            "Libération d'Undermine",
                             "Mythic+",
-                            "Raids Héroïques",
+                            "Raids Mythiques & Héroïques",
                             "Tous les encounters",
-                            "Toutes les classes",
+                            "Toutes les classes & spés",
                         ].map((item) => (
                             <span
                                 key={item}

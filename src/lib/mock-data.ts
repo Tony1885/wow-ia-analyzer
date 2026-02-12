@@ -1,5 +1,5 @@
 // ============================================================
-// Mock Data for Demo & Development
+// Mock Data for Demo & Development — WoW Patch 12.1
 // ============================================================
 
 import { AnalysisResult } from "./types";
@@ -11,53 +11,53 @@ export function generateMockAnalysis(): AnalysisResult {
             playerClass: "Mage",
             playerSpec: "Fire",
             role: "DPS",
-            totalDamage: 487_235_120,
-            totalHealing: 2_150_300,
-            dps: 98_423,
-            hps: 435,
-            fightDuration: 312,
-            percentile: 87,
+            totalDamage: 612_450_300,
+            totalHealing: 3_250_100,
+            dps: 118_720,
+            hps: 630,
+            fightDuration: 326,
+            percentile: 91,
             avoidableDamageTaken: [
                 {
-                    abilityName: "Éruption d'ombre",
-                    hitCount: 3,
-                    totalDamage: 1_250_000,
+                    abilityName: "Détonation de Gallywix",
+                    hitCount: 2,
+                    totalDamage: 1_850_000,
                     suggestion:
-                        "Déplacez-vous immédiatement quand le débuff apparaît. Utilisez Transposition ou Bouclier de givre pour réduire les dégâts.",
+                        "Déplacez-vous immédiatement quand Gallywix lance Détonation. Utilisez Transposition ou Bouclier de givre pour mitiger si vous êtes ciblé.",
                     severity: "critical",
                 },
                 {
-                    abilityName: "Onde de choc",
-                    hitCount: 1,
-                    totalDamage: 450_000,
+                    abilityName: "Éclat de dynamite",
+                    hitCount: 3,
+                    totalDamage: 720_000,
                     suggestion:
-                        "Cette mécanique nécessite un spread rapide. Anticipez le timer pour ne pas être pris au dépourvu.",
+                        "Les zones de dynamite sont prévisibles. Pré-positionnez-vous à l'écart des zones marquées au sol 2s avant l'impact.",
                     severity: "warning",
                 },
                 {
-                    abilityName: "Souffle infernal",
-                    hitCount: 2,
-                    totalDamage: 320_000,
+                    abilityName: "Onde de choc mécanique",
+                    hitCount: 1,
+                    totalDamage: 280_000,
                     suggestion:
-                        "Restez en arrière du boss pendant cette phase. Mineur mais évitable.",
+                        "Restez derrière le boss pendant la phase de transition. Mineur mais évitable avec un bon timing.",
                     severity: "minor",
                 },
             ],
             buffUptime: [
                 {
-                    buffName: "Potion de puissance",
-                    uptime: 92.3,
-                    expectedUptime: 95,
+                    buffName: "Fiole d'alchimiste",
+                    uptime: 100,
+                    expectedUptime: 100,
                 },
                 {
                     buffName: "Combustion",
-                    uptime: 88.7,
-                    expectedUptime: 90,
+                    uptime: 89.2,
+                    expectedUptime: 92,
                 },
                 {
                     buffName: "Présence ardente",
-                    uptime: 78.4,
-                    expectedUptime: 85,
+                    uptime: 81.5,
+                    expectedUptime: 88,
                 },
                 {
                     buffName: "Enchantement arme",
@@ -65,7 +65,7 @@ export function generateMockAnalysis(): AnalysisResult {
                     expectedUptime: 100,
                 },
                 {
-                    buffName: "Flask éternel",
+                    buffName: "Nourriture Well Fed",
                     uptime: 100,
                     expectedUptime: 100,
                 },
@@ -73,9 +73,9 @@ export function generateMockAnalysis(): AnalysisResult {
             cooldownUsage: [
                 {
                     cooldownName: "Combustion",
-                    usageCount: 4,
+                    usageCount: 5,
                     optimalCount: 5,
-                    efficiency: 80,
+                    efficiency: 100,
                 },
                 {
                     cooldownName: "Pouvoir arcanique",
@@ -85,83 +85,84 @@ export function generateMockAnalysis(): AnalysisResult {
                 },
                 {
                     cooldownName: "Transposition",
-                    usageCount: 2,
-                    optimalCount: 4,
-                    efficiency: 50,
+                    usageCount: 3,
+                    optimalCount: 5,
+                    efficiency: 60,
                 },
             ],
-            timeline: generateTimeline(312),
+            timeline: generateTimeline(326),
         },
         aiInsight: {
             summary:
-                "Ton cycle d'ouverture était quasi parfait avec une bonne séquence Combustion + Présence ardente. Cependant, tu as perdu environ 15% d'uptime DPS sur le boss suite à une mauvaise gestion du débuff 'Éruption d'ombre' en phase 2. Ta rotation hors Combustion est solide mais pourrait bénéficier d'un meilleur pooling de charges de Boule de feu avant chaque fenêtre de burst.",
+                "Excellente performance globale sur Gallywix Mythique — ton opener avec Combustion + Présence ardente était parfaitement timé et aligné avec la Bloodlust. Cependant, tu as perdu environ 12% d'uptime DPS en phase 2 à cause de 2 hits par Détonation qui ont forcé des mouvements non planifiés. Avec une meilleure anticipation des mécaniques, tu pourrais facilement passer au-dessus du 95e percentile.",
             strengths: [
-                "Excellente gestion de l'opener avec Combustion parfaitement timée",
-                "Temps de cast très faible (< 2% dead GCD)",
-                "Bonne utilisation des potions et consommables",
-                "Placement DPS au-dessus du 85e percentile",
+                "Opener exemplaire avec Combustion parfaitement synchronisée à la Bloodlust",
+                "Temps de cast très faible (< 1.5% dead GCD) — excellent ABC (Always Be Casting)",
+                "Gestion parfaite des consommables et buffs de pré-pull",
+                "5/5 Combustions utilisées — aucun CD gaspillé",
+                "DPS au-dessus du 91e percentile pour un Mage Feu sur ce boss",
             ],
             improvements: [
                 {
-                    area: "Gestion des mécaniques",
+                    area: "Gestion des mécaniques de Gallywix",
                     description:
-                        "3 hits évitables par Éruption d'ombre ont causé 1.2M de dégâts et forcé des mouvements non planifiés",
+                        "2 hits évitables par Détonation ont causé 1.85M de dégâts et forcé des mouvements non planifiés, résultant en une perte de ~12% d'uptime DPS sur la phase 2",
                     impact: "high",
                     priority: 1,
                 },
                 {
-                    area: "Utilisation des CDs",
+                    area: "Uptime de Présence ardente",
                     description:
-                        "Combustion n'a été utilisée que 4 fois sur 5 utilisations optimales. La dernière fenêtre (sub-20%) a été manquée.",
+                        "Présence ardente à 81.5% d'uptime au lieu de 88% optimal. Chaque drop de buff pendant un mouvement coûte ~3-5% de DPS. Re-appliquez immédiatement après chaque mouvement forcé.",
                     impact: "high",
                     priority: 2,
                 },
                 {
-                    area: "Uptime de buffs",
+                    area: "Utilisation défensive de Transposition",
                     description:
-                        "Présence ardente à 78.4% d'uptime au lieu de 85% optimal. Re-appliquez immédiatement après un mouvement.",
+                        "Seulement 3/5 Transpositions utilisées. Elles auraient pu éviter les 2 hits de Détonation en phase 2.",
                     impact: "medium",
                     priority: 3,
                 },
             ],
             actionPlan: [
                 {
-                    title: "Maîtriser le timing d'Éruption d'ombre",
+                    title: "Anticiper les Détonations de Gallywix",
                     description:
-                        "Étudiez le timer de cette mécanique (toutes les 45s). Pré-positionnez-vous 3s avant pour éviter tout mouvement de panique. Utilisez un WeakAura dédié.",
+                        "Les Détonations arrivent toutes les 40s en phase 2. Installez un WeakAura avec timer. Pré-positionnez-vous 3s avant le cast et utilisez Transposition pour revenir au melee range immédiatement après.",
                     priority: 1,
                     category: "mechanics",
                 },
                 {
-                    title: "Optimiser les fenêtres de Combustion",
+                    title: "Maximiser l'uptime de Présence ardente",
                     description:
-                        "Planifiez vos 5 Combustions : Pull, à 4:00, à 6:30, à 8:15 (Bloodlust), et sub-20%. Gardez toujours 3 charges de Boule de feu avant d'activer.",
+                        "Créez un WeakAura visuel+audio pour le drop de Présence ardente. Objectif : ne jamais dépasser 1.5s sans le buff. Sur Gallywix, re-cast immédiatement après chaque mouvement. Cible : 88%+ d'uptime.",
                     priority: 2,
-                    category: "cooldowns",
+                    category: "rotation",
                 },
                 {
-                    title: "Améliorer l'uptime de Présence ardente",
+                    title: "Planifier les CDs défensifs avec les timers de boss",
                     description:
-                        "Créez un rappel visuel pour re-buff immédiatement après un mouvement forcé. Visez 85%+ d'uptime pour gagner ~5% de DPS global.",
+                        "Associez chaque Transposition à une mécanique spécifique : T1 à la 1ère Détonation P2, T2 au 2ème, T3 comme safety net. Bloc de glace en emergency seulement.",
                     priority: 3,
-                    category: "rotation",
+                    category: "cooldowns",
                 },
             ],
             overallGrade: "A",
             detailedAnalysis:
-                "Analyse complète de 312 secondes de combat. 487M de dégâts totaux infligés. Performance globale solide se situant dans le 87e percentile pour un Mage Feu sur cette rencontre en difficulté Héroïque. Les axes d'amélioration identifiés pourraient augmenter votre DPS d'environ 12-15% si correctement appliqués.",
+                "Analyse complète de 326 secondes de combat sur Gallywix Mythique. 612M de dégâts totaux infligés avec un DPS moyen de 118.7k, plaçant la performance au 91e percentile pour un Mage Feu en patch 12.1. L'opener a généré un pic de 285k DPS ce qui est dans le top 10% des openers sur ce boss. La phase 1 était quasi parfaite avec un uptime de 97%. La chute de performance en P2 est clairement liée aux 2 Détonations prises, créant une baisse de DPS de 12% sur cette window. Les axes d'amélioration identifiés pourraient augmenter le DPS de 8-12% et permettre d'atteindre le 95e+ percentile confortablement.",
         },
         encounter: {
-            bossName: "Reine Ansurek",
-            difficulty: "Heroic",
-            dungeonOrRaid: "Palais de Nerub-ar",
-            duration: 312,
+            bossName: "Gallywix",
+            difficulty: "Mythic",
+            dungeonOrRaid: "Libération d'Undermine",
+            duration: 326,
             wipeOrKill: "Kill",
         },
         metadata: {
             analyzedAt: new Date().toISOString(),
-            logVersion: "11.0.7",
-            eventsProcessed: 145_872,
+            logVersion: "12.1",
+            eventsProcessed: 187_432,
             anonymized: false,
         },
     };
@@ -169,27 +170,39 @@ export function generateMockAnalysis(): AnalysisResult {
 
 function generateTimeline(duration: number) {
     const timeline = [];
-    const baselineDps = 95000;
+    const baselineDps = 115000;
     const burstWindows = [
-        { start: 0, end: 15 },
-        { start: 120, end: 135 },
-        { start: 195, end: 210 },
-        { start: 250, end: 265 },
+        { start: 0, end: 15 },   // Opener + BL
+        { start: 75, end: 90 },   // 2nd Combustion
+        { start: 150, end: 165 }, // 3rd Combustion
+        { start: 210, end: 225 }, // 4th Combustion
+        { start: 290, end: 305 }, // 5th Combustion (execute phase)
+    ];
+    const mechanicDips = [
+        { start: 100, end: 108 }, // Détonation P2 hit 1
+        { start: 180, end: 188 }, // Détonation P2 hit 2
     ];
 
     for (let t = 0; t <= duration; t += 3) {
-        let dps = baselineDps + (Math.random() - 0.5) * 15000;
+        let dps = baselineDps + (Math.random() - 0.5) * 18000;
 
         // Burst windows
         for (const w of burstWindows) {
             if (t >= w.start && t <= w.end) {
-                dps *= 1.8 + Math.random() * 0.4;
+                dps *= 1.9 + Math.random() * 0.5;
             }
         }
 
+        // Execute phase ramp
+        if (t >= 260) {
+            dps *= 1.1 + (t - 260) / 200;
+        }
+
         // Mechanic dips
-        if ((t >= 80 && t <= 85) || (t >= 175 && t <= 180)) {
-            dps *= 0.3 + Math.random() * 0.2;
+        for (const d of mechanicDips) {
+            if (t >= d.start && t <= d.end) {
+                dps *= 0.25 + Math.random() * 0.15;
+            }
         }
 
         timeline.push({
