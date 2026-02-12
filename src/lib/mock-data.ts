@@ -159,6 +159,11 @@ export function generateMockAnalysis(): AnalysisResult {
             duration: 326,
             wipeOrKill: "Kill",
         },
+        wclData: [
+            { encounterId: 1, encounterName: "Gallywix", rank: 450, outOf: 15400, percentile: 97, amount: 285400, spec: "Fire" },
+            { encounterId: 2, encounterName: "Mogul Razdunk", rank: 120, outOf: 12000, percentile: 99, amount: 310200, spec: "Fire" },
+            { encounterId: 3, encounterName: "Telsa", rank: 1500, outOf: 18000, percentile: 91, amount: 245000, spec: "Fire" },
+        ],
         metadata: {
             analyzedAt: new Date().toISOString(),
             logVersion: "12.1",

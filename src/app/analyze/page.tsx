@@ -95,7 +95,7 @@ function AnalyzeContent() {
     }, []);
 
     const handleFileAccepted = useCallback(
-        async (file: File, anonymize: boolean) => {
+        async (file: File, anonymize: boolean, characterInfo?: { region: string, server: string, charName?: string }) => {
             try {
                 setError(null);
                 console.log("[WoWAnalyzer] Starting analysis for:", file.name, file.size, "bytes");
@@ -148,7 +148,7 @@ function AnalyzeContent() {
                 }
 
                 const events = parseCombatLog(content);
-                const { performance, encounter } = calculateRealMetrics(events);
+                const { performance, encounter } = calculateRealMetrics(events, characterInfo?.charName);
                 const geminiContext = parseLogsForGemini(content);
 
                 const formData = new FormData();
@@ -156,6 +156,9 @@ function AnalyzeContent() {
                 formData.append("performance", JSON.stringify(performance));
                 formData.append("encounter", JSON.stringify(encounter));
                 formData.append("anonymize", anonymize.toString());
+                if (characterInfo) {
+                    formData.append("characterInfo", JSON.stringify(characterInfo));
+                }
 
                 let response: Response;
                 try {

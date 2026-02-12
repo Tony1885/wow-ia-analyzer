@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { parseLogsForGemini } from "@/lib/parse-logs";
 import { generateMockAnalysis } from "@/lib/mock-data";
+import { fetchWCLRankings, slugifyServer } from "@/lib/wcl-api";
 
 export const maxDuration = 120; // 2 minutes timeout for Vercel
 
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
         const geminiContext = formData.get("geminiContext") as string | null;
         performanceStr = formData.get("performance") as string || "";
         encounterStr = formData.get("encounter") as string || "";
+        const charInfoStr = formData.get("characterInfo") as string | null;
         const anonymize = formData.get("anonymize") === "true";
         const demoMode = formData.get("demo") === "true";
 
@@ -42,6 +44,25 @@ export async function POST(request: NextRequest) {
             duration: realPerformance.fightDuration,
             wipeOrKill: "Kill"
         };
+
+        // 🔍 Warcraft Logs Integration
+        let wclRankings = null;
+        let wclSummary = "Aucune donnée WCL trouvée.";
+        if (charInfoStr) {
+            const charInfo = JSON.parse(charInfoStr);
+            console.log("[API] Fetching WCL rankings for:", charInfo);
+            wclRankings = await fetchWCLRankings(
+                charInfo.charName || realPerformance.playerName,
+                slugifyServer(charInfo.server),
+                charInfo.region
+            );
+            if (wclRankings && wclRankings.length > 0) {
+                wclSummary = wclRankings
+                    .slice(0, 5)
+                    .map(r => `- ${r.encounterName}: Percentile ${r.percentile}% (${r.spec})`)
+                    .join("\n");
+            }
+        }
 
         const apiKey = process.env.GOOGLE_AI_API_KEY;
         if (!apiKey) {
@@ -69,6 +90,9 @@ export async function POST(request: NextRequest) {
             Analyse les données de combat fournies pour le joueur ${realPerformance.playerName}.
             Contexte : ${realEncounter.dungeonOrRaid} (${realEncounter.difficulty}).
             
+            DONNÉES WCL HISTORIQUES DU JOUEUR :
+            ${wclSummary}
+
             Réponds UNIQUEMENT avec un objet JSON respectant ce schéma :
             {
               "summary": "Résumé de la performance",
@@ -76,10 +100,10 @@ export async function POST(request: NextRequest) {
               "improvements": [{"area": "Domaine", "description": "Détails", "impact": "high", "priority": 1}],
               "overallGrade": "S | A | B | C",
               "actionPlan": [{"title": "Action", "description": "Détails concrets", "priority": 1, "category": "rotation"}],
-              "detailedAnalysis": "Analyse technique"
+              "detailedAnalysis": "Analyse technique utilisant les données WCL historiques pour situer le joueur"
             }
 
-            DONNÉES :
+            DONNÉES DU COMBAT ACTUEL :
             ${geminiContext}
         `;
 
@@ -100,6 +124,7 @@ export async function POST(request: NextRequest) {
                 performance: realPerformance,
                 aiInsight: aiInsight,
                 encounter: realEncounter,
+                wclData: wclRankings,
                 metadata: {
                     analyzedAt: new Date().toISOString(),
                     logVersion: "12.1",

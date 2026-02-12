@@ -75,7 +75,7 @@ function splitCSVLine(line: string): string[] {
     return result;
 }
 
-export function calculateRealMetrics(events: CombatLogEvent[]): { performance: AnalysisResult["performance"]; encounter: EncounterInfo } {
+export function calculateRealMetrics(events: CombatLogEvent[], targetPlayerName?: string): { performance: AnalysisResult["performance"]; encounter: EncounterInfo } {
     const stats: Record<string, { dmg: number; heal: number; events: number; lastTime: number; startTime: number; guid: string; name: string }> = {};
     const avoidableDamage: Record<string, { count: number; total: number }> = {};
     const timelineData: Record<number, { dps: number; hps: number }> = {};
@@ -85,6 +85,8 @@ export function calculateRealMetrics(events: CombatLogEvent[]): { performance: A
     let difficulty: EncounterInfo["difficulty"] = "Normal";
     let keystoneLevel = 0;
 
+    const playerInfo: Record<string, { classId: number, specId: number }> = {};
+
     events.forEach(ev => {
         if (ev.eventType === "CHALLENGE_MODE_START") {
             dungeonName = ev.rawData[0] || dungeonName;
@@ -92,12 +94,19 @@ export function calculateRealMetrics(events: CombatLogEvent[]): { performance: A
             keystoneLevel = parseInt(ev.rawData[3]) || 0;
         } else if (ev.eventType === "ENCOUNTER_START") {
             bossName = ev.rawData[1] || bossName;
+        } else if (ev.eventType === "COMBATANT_INFO") {
+            const guid = ev.sourceGUID;
+            const classId = parseInt(ev.rawData[1]);
+            const specId = parseInt(ev.rawData[2]);
+            if (guid && !isNaN(classId)) {
+                playerInfo[guid] = { classId, specId };
+            }
         }
     });
 
     const year = new Date().getFullYear();
     events.forEach(ev => {
-        if (ev.eventType.includes("ENCOUNTER") || ev.eventType.includes("CHALLENGE")) return;
+        if (ev.eventType.includes("ENCOUNTER") || ev.eventType.includes("CHALLENGE") || ev.eventType === "COMBATANT_INFO") return;
 
         const guid = ev.sourceGUID;
         if (!guid || !guid.startsWith("Player-")) return;
@@ -166,9 +175,22 @@ export function calculateRealMetrics(events: CombatLogEvent[]): { performance: A
         return { performance: createDefaultPerformance(), encounter: createDefaultEncounter() };
     }
 
-    const mainGUID = playerGUIDs.sort((a, b) => stats[b].events - stats[a].events)[0];
+    // Identify main player
+    let mainGUID = "";
+    if (targetPlayerName) {
+        mainGUID = playerGUIDs.find(guid => stats[guid].name.toLowerCase() === targetPlayerName.toLowerCase()) || "";
+    }
+
+    if (!mainGUID) {
+        mainGUID = playerGUIDs.sort((a, b) => stats[b].events - stats[a].events)[0];
+    }
+
     const p = stats[mainGUID];
     const duration = Math.max(1, (p.lastTime - p.startTime) / 1000);
+
+    // Map Class/Spec
+    const info = playerInfo[mainGUID];
+    const { playerClass, playerSpec, role } = getPlayerContext(info?.classId, info?.specId);
 
     // Format Timeline
     const timeline = Object.keys(timelineData)
@@ -194,9 +216,9 @@ export function calculateRealMetrics(events: CombatLogEvent[]): { performance: A
     return {
         performance: {
             playerName: p.name,
-            playerClass: "Monk",
-            playerSpec: "Brewmaster",
-            role: "Tank",
+            playerClass,
+            playerSpec,
+            role,
             totalDamage: p.dmg,
             totalHealing: p.heal,
             dps: Math.round(p.dmg / duration),
@@ -259,3 +281,39 @@ export function summarizeForAI(events: CombatLogEvent[]): string {
 }
 
 export function anonymizeNames(events: CombatLogEvent[]): CombatLogEvent[] { return events; }
+
+// --- Helpers ---
+
+function getPlayerContext(classId?: number, specId?: number): { playerClass: WowClass, playerSpec: string, role: "DPS" | "Healer" | "Tank" } {
+    const classMap: Record<number, WowClass> = {
+        1: "Warrior", 2: "Paladin", 3: "Hunter", 4: "Rogue", 5: "Priest",
+        6: "Death Knight", 7: "Shaman", 8: "Mage", 9: "Warlock", 10: "Monk",
+        11: "Druid", 12: "Demon Hunter", 13: "Evoker"
+    };
+
+    const specMap: Record<number, { name: string, role: "DPS" | "Healer" | "Tank" }> = {
+        // Monk
+        268: { name: "Brewmaster", role: "Tank" },
+        270: { name: "Mistweaver", role: "Healer" },
+        269: { name: "Windwalker", role: "DPS" },
+        // Paladin
+        65: { name: "Holy", role: "Healer" },
+        66: { name: "Protection", role: "Tank" },
+        70: { name: "Retribution", role: "DPS" },
+        // Druid
+        102: { name: "Balance", role: "DPS" },
+        103: { name: "Feral", role: "DPS" },
+        104: { name: "Guardian", role: "Tank" },
+        105: { name: "Restoration", role: "Healer" },
+        // ... add more as needed, but this covers the basics
+    };
+
+    const playerClass = classMap[classId || 0] || "Monk";
+    const specInfo = specMap[specId || 0] || { name: "Inconnu", role: "DPS" };
+
+    return {
+        playerClass: playerClass as WowClass,
+        playerSpec: specInfo.name,
+        role: specInfo.role
+    };
+}

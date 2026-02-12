@@ -10,6 +10,7 @@ import { PerformanceMetrics, AvoidableDamageList, BuffUptimeList } from "./perfo
 import { AIInsightCard } from "./ai-insight-card";
 import { DpsTimelineChart } from "./dps-timeline-chart";
 import { ActionPlan } from "./action-plan";
+import { WCLRankingsCard } from "./wcl-rankings";
 
 interface ResultsDashboardProps {
     result: AnalysisResult;
@@ -77,26 +78,35 @@ export function ResultsDashboard({ result, onReset }: ResultsDashboardProps) {
                 <PerformanceMetrics performance={result.performance} />
             </motion.div>
 
-            {/* AI Insight + Timeline row */}
+            {/* WCL Data + AI Insight row */}
             <div className="grid gap-6 lg:grid-cols-2">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.4 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
                 >
-                    <AIInsightCard insight={result.aiInsight} />
+                    <WCLRankingsCard rankings={result.wclData || []} />
                 </motion.div>
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: 0.4 }}
                 >
-                    <DpsTimelineChart
-                        timeline={result.performance.timeline}
-                        averageDps={result.performance.dps}
-                    />
+                    <AIInsightCard insight={result.aiInsight} />
                 </motion.div>
             </div>
+
+            {/* Timeline */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+            >
+                <DpsTimelineChart
+                    timeline={result.performance.timeline}
+                    averageDps={result.performance.dps}
+                />
+            </motion.div>
 
             {/* Avoidable Damage + Buff Uptime */}
             <div className="grid gap-6 lg:grid-cols-2">

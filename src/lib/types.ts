@@ -87,6 +87,7 @@ export interface AnalysisResult {
     performance: PlayerPerformance;
     aiInsight: AIInsight;
     encounter: EncounterInfo;
+    wclData?: any[];
     metadata: AnalysisMetadata;
     notice?: string;
 }
