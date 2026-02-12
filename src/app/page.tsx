@@ -52,6 +52,7 @@ export default function HomePage() {
                   Trois outils, une seule interface pour dominer tes clés Mythic+ et Raids.
                   Optimise ton gameplay avec les meilleurs experts digitaux d&apos;Azeroth.
                 </p>
+                <div className="text-[10px] text-slate-800 font-mono mt-2">v1.0.3-diag</div>
               </div>
 
               {/* Dashboard Grid */}
