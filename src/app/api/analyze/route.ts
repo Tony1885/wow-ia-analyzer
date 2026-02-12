@@ -38,8 +38,17 @@ export async function POST(request: NextRequest) {
         let charInfo = charInfoStr ? JSON.parse(charInfoStr) : null;
         let reportCode = charInfo?.reportCode;
 
+        console.log("[API] Analysis Request:", {
+            hasFile: !!geminiContext,
+            hasRawLog: !!rawLog,
+            wclOnly,
+            charName: charInfo?.charName,
+            reportCode
+        });
+
         // --- NEW: RAW LOG ANALYSIS ---
         if (rawLog) {
+            console.log("[API] Processing Raw Log Analysis");
             const { cleanRawLogs } = require("@/lib/log-parser");
             const cleaned = cleanRawLogs(rawLog);
 

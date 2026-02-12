@@ -250,7 +250,7 @@ export function Dropzone({ onFileAccepted, onTestMPlus, isProcessing }: Dropzone
 
                 {/* Search Results */}
                 <AnimatePresence>
-                    {searchResults.length > 0 && (
+                    {searchResults.length > 0 ? (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
@@ -285,6 +285,21 @@ export function Dropzone({ onFileAccepted, onTestMPlus, isProcessing }: Dropzone
                                     </button>
                                 ))}
                             </div>
+                        </motion.div>
+                    ) : charName && !isSearching && !error && searchResults.length === 0 && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="rounded-xl border border-white/5 bg-white/[0.02] p-6 text-center"
+                        >
+                            <div className="mx-auto w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                                <Search className="w-6 h-6 text-gray-600" />
+                            </div>
+                            <h4 className="text-sm font-bold text-white mb-2">Aucun rapport trouvé ?</h4>
+                            <p className="text-xs text-gray-500 leading-relaxed mb-4">
+                                Vérifiez que vos logs sont bien en mode **Public** sur Warcraft Logs.
+                                Si le problème persiste, utilisez l'onglet **Analyse Directe** en haut pour copier-coller vos textes.
+                            </p>
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -137,6 +137,7 @@ export async function fetchCharacterReports(
             `;
 
             try {
+                console.log(`[WCL] Fetching reports (v2) for ${charName}-${serverSlug} (${upperRegion})`);
                 const res = await fetch("https://www.warcraftlogs.com/api/v2/client", {
                     method: "POST",
                     headers: {
@@ -146,8 +147,17 @@ export async function fetchCharacterReports(
                     body: JSON.stringify({ query }),
                 });
                 const data = await res.json();
+
+                if (data.errors) {
+                    console.error("[WCL] v2 GraphQL Errors:", data.errors);
+                }
+
                 const reports = data.data?.characterData?.character?.recentReports?.data;
-                if (reports && reports.length > 0) return reports;
+                if (reports && reports.length > 0) {
+                    console.log(`[WCL] Got ${reports.length} reports via v2`);
+                    return reports;
+                }
+                console.log(`[WCL] No reports found via v2 for ${charName}`);
             } catch (e) {
                 console.error("[WCL] v2 Error:", e);
             }
@@ -163,6 +173,7 @@ export async function fetchCharacterReports(
                 if (res.ok) {
                     const data = await res.json();
                     if (data && data.length > 0) {
+                        console.log(`[WCL] Got ${data.length} reports via v1`);
                         return data.map((r: any) => ({
                             code: r.id,
                             startTime: r.start,
@@ -171,7 +182,8 @@ export async function fetchCharacterReports(
                         }));
                     }
                 } else {
-                    console.error("[WCL] v1 API Error:", res.status);
+                    const errText = await res.text();
+                    console.error(`[WCL] v1 API Error: ${res.status} - ${errText}`);
                 }
             } catch (e) {
                 console.error("[WCL] v1 Fallback Error:", e);
