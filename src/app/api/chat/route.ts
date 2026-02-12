@@ -20,9 +20,10 @@ export async function POST(request: NextRequest) {
         }
 
         const systemPrompt = SYSTEM_PROMPTS[mode as keyof typeof SYSTEM_PROMPTS] || SYSTEM_PROMPTS.coach;
+        console.log(`[Chat API] Region: ${process.env.VERCEL_REGION || 'local'}`);
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         // Simplification : Direct Generation to avoid chat state issues in some edge cases
         const result = await model.generateContent(`System: ${systemPrompt}\n\nUser: ${message}`);
