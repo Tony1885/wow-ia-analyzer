@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
 
 export const metadata: Metadata = {
   title: "WoW AI Analyzer — Optimise ton build de talents",
@@ -33,7 +32,6 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-[#020617] text-gray-200 antialiased selection:bg-violet-500/30">
-        <Navbar />
         <main>{children}</main>
       </body>
     </html>
