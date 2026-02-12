@@ -73,7 +73,7 @@ function AnalyzeContent() {
                 currentStep++;
                 setProgress((prev) => ({
                     ...prev,
-                    progress: Math.min(toProgress, fromProgress + increment * currentStep),
+                    progress: Math.round(Math.min(toProgress, fromProgress + increment * currentStep)),
                 }));
                 if (currentStep >= steps) {
                     if (progressIntervalRef.current) {
@@ -126,12 +126,13 @@ function AnalyzeContent() {
                     ...prev,
                     state: "analyzing",
                     progress: 55,
-                    message: "Claude analyse tes performances...",
-                    subMessage: "Intelligence artificielle en action 🧠",
+                    message: "Gemini 1.5 Flash analyse tes logs...",
+                    subMessage: "Extraction des patterns de jeu 🧠",
                 }));
 
                 // Animate progress from 55% to 92% while the API call runs
-                startProgressAnimation(55, 92, 20000);
+                // Increased to 40s to accommodate Gemini processing time
+                startProgressAnimation(55, 92, 40000);
 
                 // Launch the API call with a timeout
                 const controller = new AbortController();
@@ -185,11 +186,11 @@ function AnalyzeContent() {
                 setProgress({
                     state: "analyzing",
                     progress: 92,
-                    message: "Finalisation de l'analyse...",
-                    subMessage: "Génération du plan d'action",
+                    message: "L'IA a terminé l'analyse !",
+                    subMessage: "Génération du dashboard final...",
                 });
-                startProgressAnimation(92, 100, 800);
-                await new Promise((r) => setTimeout(r, 800));
+                startProgressAnimation(92, 100, 1500);
+                await new Promise((r) => setTimeout(r, 1500));
                 stopProgressAnimation();
 
                 setResult(data.data);
