@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
         const demoMode = formData.get("demo") === "true";
         const wclOnly = formData.get("wclOnly") === "true";
 
+        const rawLog = formData.get("rawLog") as string | null;
+
         // Mode démo - retour immédiat de données simulées
         if (demoMode) {
             return NextResponse.json({
@@ -36,8 +38,34 @@ export async function POST(request: NextRequest) {
         let charInfo = charInfoStr ? JSON.parse(charInfoStr) : null;
         let reportCode = charInfo?.reportCode;
 
+        // --- NEW: RAW LOG ANALYSIS ---
+        if (rawLog) {
+            const { cleanRawLogs } = require("@/lib/log-parser");
+            const cleaned = cleanRawLogs(rawLog);
+
+            geminiContext = cleaned.cleanedText;
+            const realPerformance = {
+                playerName: cleaned.sourceName,
+                playerClass: "Warrior", // Fallback, Gemini will refine
+                role: "DPS",
+                dps: 0,
+                totalDamage: 0,
+                fightDuration: 0,
+                rawStats: cleaned.stats
+            };
+            const realEncounter = {
+                bossName: "Extrait Brut",
+                difficulty: "Mythic+",
+                dungeonOrRaid: "Analyse Directe",
+                duration: 0,
+                wipeOrKill: "Inconnu"
+            };
+
+            performanceStr = JSON.stringify(realPerformance);
+            encounterStr = JSON.stringify(realEncounter);
+        }
         // If WCL ONLY and no file
-        if (wclOnly && !geminiContext && reportCode) {
+        else if (wclOnly && !geminiContext && reportCode) {
             const { fetchWCLReportDetails, fetchWCLFightData } = require("@/lib/wcl-api");
             const reportDetails = await fetchWCLReportDetails(reportCode);
 
@@ -95,7 +123,7 @@ export async function POST(request: NextRequest) {
             encounterStr = JSON.stringify(realEncounter);
         }
 
-        if (!performanceStr && !wclOnly) {
+        if (!performanceStr && !wclOnly && !rawLog) {
             return NextResponse.json({ success: false, error: "Données d'analyse manquantes." }, { status: 400 });
         }
 
@@ -149,14 +177,19 @@ export async function POST(request: NextRequest) {
         });
 
         const prompt = `
-            Tu es un coach expert de World of Warcraft Retail (analyste de logs).
-            Analyse les données de combat fournies pour le joueur ${realPerformance.playerName}.
+            Tu es un expert WoW. Voici un extrait brut de log de combat (ou des données de performance pré-analysées).
+            Cible : Joueur ${realPerformance.playerName}.
             Contexte : ${realEncounter.dungeonOrRaid} (${realEncounter.difficulty}).
+
+            MISSION :
+            - Identifie la classe du joueur si non spécifiée (actuel: ${realPerformance.playerClass}).
+            - Analyse sa rotation (priorités, séquences).
+            - Identifie ses erreurs de placement ou mécaniques ratées.
+            - Donne des conseils ultra-spécifiques.
             
-            IMPORTANT : Si nous sommes en Mythic+ (M+), la priorité absolue est la survie et l'utilitaire. 
+            IMPORTANT : Si c'est du Mythic+ (M+), la priorité absolue est la survie et l'utilitaire. 
             Mourir sur une mécanique de pack ou rater un kick crucial est BIEN PLUS GRAVE que de perdre 5% de DPS.
             L'IA doit être sévère sur les interrupts manqués et le positionnement.
-            Exemple de ton : "Tu as fait 1.2M DPS, mais tu as raté 4 kicks cruciaux sur les Arcanistes, ce qui a failli wipe le groupe."
 
             DONNÉES WCL HISTORIQUES DU JOUEUR :
             ${wclSummary}

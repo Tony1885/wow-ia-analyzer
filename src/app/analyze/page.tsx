@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navigation";
+import { cn } from "@/lib/utils";
 import { Dropzone } from "@/components/upload/dropzone";
+import { RawLogTextArea } from "@/components/upload/raw-log-textarea";
 import { ProcessingOverlay } from "@/components/upload/processing-overlay";
 import { ActionPlan } from "@/components/dashboard/action-plan";
 import { EncounterHeader } from "@/components/dashboard/encounter-header";
@@ -39,6 +41,7 @@ function AnalyzeContent() {
     const isDemo = searchParams.get("demo") === "true";
 
     const [analysisState, setAnalysisState] = useState<AnalysisState>("idle");
+    const [activeTab, setActiveTab] = useState<'wcl' | 'raw'>('wcl');
     const [progress, setProgress] = useState<UploadProgress>({
         state: "idle",
         progress: 0,
@@ -254,6 +257,63 @@ function AnalyzeContent() {
         [startProgressAnimation, stopProgressAnimation]
     );
 
+    const handleRawLogAnalyze = useCallback(async (rawLog: string) => {
+        try {
+            setError(null);
+            setAnalysisState("uploading");
+            setProgress({
+                state: "uploading",
+                progress: 10,
+                message: "Pré-parsing du log brut...",
+                subMessage: "Extraction des séquences de combat",
+            });
+            startProgressAnimation(10, 40, 2000);
+            await new Promise((r) => setTimeout(r, 2000));
+
+            setAnalysisState("analyzing");
+            setProgress((prev) => ({
+                ...prev,
+                state: "analyzing",
+                message: "Gemini 1.5 Flash analyse les données...",
+                subMessage: "Interprétation des mécaniques",
+            }));
+            startProgressAnimation(40, 92, 6000);
+
+            const formData = new FormData();
+            formData.append("rawLog", rawLog);
+
+            const response = await fetch("/api/analyze", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || "Erreur d'analyse brute.");
+            }
+
+            const data = await response.json();
+            stopProgressAnimation();
+
+            // Finalization (92→100%)
+            setProgress({
+                state: "analyzing",
+                progress: 92,
+                message: "L'IA a terminé l'analyse !",
+                subMessage: "Génération du dashboard final...",
+            });
+            startProgressAnimation(92, 100, 1000);
+            await new Promise(r => setTimeout(r, 1000));
+
+            setResult(data.data);
+            setAnalysisState("complete");
+        } catch (err) {
+            stopProgressAnimation();
+            setAnalysisState("error");
+            setError(err instanceof Error ? err.message : "Erreur d'analyse brute");
+        }
+    }, [startProgressAnimation, stopProgressAnimation]);
+
     const handleDemo = useCallback(async () => {
         try {
             setError(null);
@@ -411,11 +471,43 @@ function AnalyzeContent() {
                                 </div>
 
                                 <div className="mt-12">
-                                    <Dropzone
-                                        onFileAccepted={handleFileAccepted}
-                                        onTestMPlus={handleTestMPlus}
-                                        isProcessing={false}
-                                    />
+                                    <div className="flex justify-center gap-4 mb-8">
+                                        <button
+                                            onClick={() => setActiveTab('wcl')}
+                                            className={cn(
+                                                "px-6 py-2 rounded-xl text-sm font-bold transition-all ring-1",
+                                                activeTab === 'wcl'
+                                                    ? "bg-epic-500/20 text-epic-400 ring-epic-500/50 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+                                                    : "bg-white/5 text-gray-500 ring-white/10 hover:bg-white/10"
+                                            )}
+                                        >
+                                            Warcraft Logs
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab('raw')}
+                                            className={cn(
+                                                "px-6 py-2 rounded-xl text-sm font-bold transition-all ring-1",
+                                                activeTab === 'raw'
+                                                    ? "bg-mana-500/20 text-mana-400 ring-mana-500/50 shadow-[0_0_15px_rgba(14,165,233,0.2)]"
+                                                    : "bg-white/5 text-gray-500 ring-white/10 hover:bg-white/10"
+                                            )}
+                                        >
+                                            Analyse Directe (Text)
+                                        </button>
+                                    </div>
+
+                                    {activeTab === 'wcl' ? (
+                                        <Dropzone
+                                            onFileAccepted={handleFileAccepted}
+                                            onTestMPlus={handleTestMPlus}
+                                            isProcessing={false}
+                                        />
+                                    ) : (
+                                        <RawLogTextArea
+                                            onAnalyze={handleRawLogAnalyze}
+                                            isProcessing={false}
+                                        />
+                                    )}
                                 </div>
 
                                 {/* Demo mode shortcut */}

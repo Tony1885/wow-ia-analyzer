@@ -280,6 +280,60 @@ export function summarizeForAI(events: CombatLogEvent[]): string {
     return `PLAYER: ${p.playerName}\nDPS: ${p.dps}\nHEAL: ${p.totalHealing}\nDURATION: ${p.fightDuration}s`;
 }
 
+/**
+ * Nettoyage et pré-parsing des logs bruts pour analyse directe
+ */
+export function cleanRawLogs(input: string): {
+    cleanedText: string,
+    sourceName: string,
+    stats: { casts: number, damageTaken: number, deaths: number }
+} {
+    const lines = input.split("\n");
+    const counts: Record<string, number> = {};
+    let damageTaken = 0;
+    let deaths = 0;
+    let casts = 0;
+
+    // Filter relevant lines and identify main player
+    const relevantLines = lines.filter(line => {
+        const isRelevant = line.includes("SPELL_CAST_SUCCESS") ||
+            line.includes("SPELL_DAMAGE") ||
+            line.includes("UNIT_DIED") ||
+            line.includes("SPELL_AURA_APPLIED");
+
+        if (isRelevant) {
+            const parts = line.split(",");
+            const sourceName = parts[2]?.replace(/"/g, "");
+            if (sourceName && sourceName !== "nil" && !sourceName.includes("-")) { // Avoid NPC IDs
+                counts[sourceName] = (counts[sourceName] || 0) + 1;
+            }
+            if (line.includes("SPELL_CAST_SUCCESS")) casts++;
+            if (line.includes("UNIT_DIED")) deaths++;
+        }
+        return isRelevant;
+    });
+
+    // Identify main player (most events)
+    const sourceName = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "Joueur Inconnu";
+
+    // Re-scan for specific stats of that player
+    relevantLines.forEach(line => {
+        if (line.includes("SPELL_DAMAGE") && line.includes(sourceName)) {
+            const parts = line.split(",");
+            // Check if player is the target (destName)
+            if (parts[6]?.includes(sourceName)) {
+                damageTaken += parseInt(parts[parts.length - 15]) || 0;
+            }
+        }
+    });
+
+    return {
+        cleanedText: relevantLines.slice(0, 500).join("\n"), // Limit for Gemini
+        sourceName,
+        stats: { casts, damageTaken, deaths }
+    };
+}
+
 export function anonymizeNames(events: CombatLogEvent[]): CombatLogEvent[] { return events; }
 
 // --- Helpers ---
