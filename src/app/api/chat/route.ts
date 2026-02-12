@@ -7,12 +7,16 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { message, mode } = body;
 
-        console.log(`[Chat API] Mode: ${mode}, Message length: ${message?.length}`);
+        console.log(`[Chat API] Start - Mode: ${mode}`);
 
         const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY;
+
         if (!apiKey) {
-            console.error("[Chat API] Missing API Key in ENV");
-            return NextResponse.json({ error: "Clé API manquante dans les variables d'environnement Vercel." }, { status: 500 });
+            console.error("[Chat API] CRITICAL: GOOGLE_AI_API_KEY is not defined");
+            return NextResponse.json({
+                error: "Désolé, l'IA n'est pas configurée.",
+                details: "La clé API 'GOOGLE_AI_API_KEY' est manquante sur Vercel. Pense à redéployer après l'avoir ajoutée."
+            }, { status: 500 });
         }
 
         const systemPrompt = SYSTEM_PROMPTS[mode as keyof typeof SYSTEM_PROMPTS] || SYSTEM_PROMPTS.coach;
@@ -20,29 +24,24 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // On utilise l'historique pour injecter le prompt système de manière robuste
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: "Consigne système : " + systemPrompt }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Compris. Je suis prêt à t'aider en suivant ces instructions." }],
-                },
-            ],
-        });
-
-        const result = await chat.sendMessage(message);
+        // Simplification : Direct Generation to avoid chat state issues in some edge cases
+        const result = await model.generateContent(`System: ${systemPrompt}\n\nUser: ${message}`);
         const text = result.response.text();
 
         return NextResponse.json({ text });
     } catch (error: any) {
-        console.error("Chat API Detailed Error:", error);
+        console.error("[Chat API] Error:", error.message);
+
+        let technicalDetails = error.message;
+        if (technicalDetails.includes("API key not valid")) {
+            technicalDetails = "Clé API invalide. Vérifie-la dans Google AI Studio.";
+        } else if (technicalDetails.includes("supported")) {
+            technicalDetails = "Région non supportée (Vercel Serverless location).";
+        }
+
         return NextResponse.json({
-            error: "Erreur lors de la génération de la réponse.",
-            details: error.message
+            error: "Erreur lors de la réponse de l'IA.",
+            details: technicalDetails
         }, { status: 500 });
     }
 }

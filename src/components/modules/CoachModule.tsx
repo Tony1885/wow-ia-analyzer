@@ -29,10 +29,10 @@ export function CoachModule() {
                 headers: { "Content-Type": "application/json" }
             })
             const data = await res.json()
-            if (!res.ok) throw new Error(data.error || "Erreur API")
+            if (!res.ok) throw new Error(data.details || data.error || "Erreur API")
             setMessages(prev => [...prev, { role: "ai", content: data.text }])
         } catch (error: any) {
-            setMessages(prev => [...prev, { role: "ai", content: `Désolé, j'ai rencontré une erreur : ${error.message}.` }])
+            setMessages(prev => [...prev, { role: "ai", content: `Erreur : ${error.message}` }])
         } finally {
             setIsLoading(false)
         }
