@@ -397,8 +397,7 @@ function AnalyzeContent() {
                                         animate={{ opacity: 1, y: 0 }}
                                         className="font-display text-4xl font-bold text-white sm:text-5xl"
                                     >
-                                        Analyse ton{" "}
-                                        <span className="text-gradient-epic">combat log</span>
+                                        Analysez vos <span className="text-gradient-epic">combats</span>
                                     </motion.h1>
                                     <motion.p
                                         initial={{ opacity: 0, y: 10 }}
@@ -406,7 +405,7 @@ function AnalyzeContent() {
                                         transition={{ delay: 0.1 }}
                                         className="mt-4 text-lg text-gray-400"
                                     >
-                                        Upload ton fichier WoWCombatLog.txt pour obtenir tes
+                                        Recherchez votre personnage pour obtenir vos
                                         conseils IA personnalisés.
                                     </motion.p>
                                 </div>
