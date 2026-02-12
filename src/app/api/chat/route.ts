@@ -19,15 +19,25 @@ export async function POST(request: NextRequest) {
             }, { status: 500 });
         }
 
-        const systemPrompt = SYSTEM_PROMPTS[mode as keyof typeof SYSTEM_PROMPTS] || SYSTEM_PROMPTS.coach;
-        console.log(`[Chat API] Region: ${process.env.VERCEL_REGION || 'local'}`);
+        const systemPrompt = SYSTEM_PROMPTS[mode as keyof typeof SYSTEM_PROMPTS] || SYSTEM_PROMPTS.build;
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-        // Simplification : Direct Generation to avoid chat state issues in some edge cases
-        const result = await model.generateContent(`System: ${systemPrompt}\n\nUser: ${message}`);
-        const text = result.response.text();
+        // Use gemini-1.5-flash-latest which is often more stable across regions
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash-latest",
+        });
+
+        // Simplified combined prompt to avoid systemInstruction blocks that can be region-sensitive
+        const prompt = `INSTRUCTIONS SYSTÈME: ${systemPrompt}\n\nREQUÊTE UTILISATEUR: ${message}`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        if (!text) {
+            throw new Error("L'IA a retourné une réponse vide.");
+        }
 
         return NextResponse.json({ text });
     } catch (error: any) {
@@ -39,7 +49,7 @@ export async function POST(request: NextRequest) {
         if (technicalDetails.includes("API key not valid")) {
             technicalDetails = "Clé API invalide. Vérifie-la dans Google AI Studio.";
         } else if (technicalDetails.includes("supported")) {
-            technicalDetails = `Région [${region}] non supportée par Google Gemini.`;
+            technicalDetails = `La région Vercel [${region}] est bloquée par Google. Change la région des 'Functions' en Washington (iad1) ou San Francisco (sfo1) dans les réglages Vercel et REDÉPLOIE.`;
         }
 
         return NextResponse.json({

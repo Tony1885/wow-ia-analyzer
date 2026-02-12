@@ -3,17 +3,16 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 
 export const metadata: Metadata = {
-  title: "WoW AI Nexus — Maîtrise le Nexus avec l'IA",
+  title: "WoW AI Analyzer — Optimise ton build de talents",
   description:
-    "Trois outils, une seule interface pour dominer tes clés Mythic+ et Raids. Coach IA, Analyse builds et Générateur de macros.",
+    "Analyseur de talents intelligent pour WoW Retail. Décrypte tes codes Blizzard et reçois une rotation optimale générée par l'IA.",
   keywords: [
     "WoW",
     "World of Warcraft",
     "IA",
-    "Nexus",
-    "Coach",
-    "Macros",
-    "Builds",
+    "Talents",
+    "Build",
+    "Rotation",
     "Performance",
   ],
 };
