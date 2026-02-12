@@ -102,10 +102,19 @@ export function calculateRealMetrics(events: CombatLogEvent[]): AnalysisResult["
         const stats = sourceStats[ev.sourceName];
         stats.events++;
 
-        // Simple timestamp diff for duration
-        const time = new Date("2026/01/01 " + ev.timestamp.split(" ")[1]).getTime();
-        if (!stats.startTime) stats.startTime = time;
-        stats.lastTime = time;
+        // Robust timestamp parsing (ISO 8601 or Legacy)
+        let time = 0;
+        if (ev.timestamp.includes("T")) {
+            time = new Date(ev.timestamp).getTime();
+        } else {
+            const timePart = ev.timestamp.split(/\s+/)[1];
+            time = new Date(`2026-01-01T${timePart}`).getTime();
+        }
+
+        if (!isNaN(time)) {
+            if (!stats.startTime) stats.startTime = time;
+            stats.lastTime = time;
+        }
 
         if (ev.eventType.includes("DAMAGE")) {
             const amt = parseInt(ev.rawData[ev.eventType.startsWith("SWING") ? 0 : 3]) || 0;
@@ -116,8 +125,29 @@ export function calculateRealMetrics(events: CombatLogEvent[]): AnalysisResult["
         }
     });
 
+    // If no events or no source stats, return default data
+    const players = Object.keys(sourceStats);
+    if (players.length === 0) {
+        return {
+            playerName: "Joueur Inconnu",
+            playerClass: "Monk",
+            playerSpec: "Brewmaster",
+            role: "Tank",
+            totalDamage: 0,
+            totalHealing: 0,
+            dps: 0,
+            hps: 0,
+            fightDuration: 1,
+            percentile: 0,
+            avoidableDamageTaken: [],
+            buffUptime: [],
+            cooldownUsage: [],
+            timeline: []
+        };
+    }
+
     // Find the player with most events (likely the user)
-    const playerName = Object.keys(sourceStats).sort((a, b) => sourceStats[b].events - sourceStats[a].events)[0] || "Unknown";
+    const playerName = players.sort((a, b) => sourceStats[b].events - sourceStats[a].events)[0];
     const p = sourceStats[playerName];
     const duration = Math.max(1, (p.lastTime - p.startTime) / 1000);
 
