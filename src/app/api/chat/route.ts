@@ -99,17 +99,17 @@ export async function POST(request: NextRequest) {
 
         if (technicalDetails.includes("API key not valid")) {
             technicalDetails = "Clé API invalide. Vérifie-la dans Google AI Studio.";
-        } else if (technicalDetails.includes("supported") || technicalDetails.includes("location")) {
+        } else if (technicalDetails.includes("supported") || technicalDetails.includes("location") || technicalDetails.includes("403")) {
             // This error usually means "User location is not supported"
             if (region === "local") {
-                technicalDetails = "Ton IP actuelle est bloquée par l'API Google (Zone géographique non supportée ou API Key restreinte). Essaie un VPN (USA) ou une autre clé.";
+                technicalDetails = `Ton IP locale est bloquée par Google. (Erreur originale: ${error.message})`;
             } else {
-                technicalDetails = `La région Vercel [${region}] est bloquée par Google. Change la région des 'Functions' en Washington (iad1) ou San Francisco (sfo1).`;
+                technicalDetails = `La région Vercel [${region}] semble bloquée. Google dit: ${error.message}`;
             }
         }
 
         return NextResponse.json({
-            error: "Erreur lors de la réponse de l'IA.",
+            error: "Erreur IA (Google)",
             details: technicalDetails
         }, { status: 500 });
     }
