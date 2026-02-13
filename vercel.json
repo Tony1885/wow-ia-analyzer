@@ -1,0 +1,11 @@
+{
+    "regions": [
+        "sfo1"
+    ],
+    "functions": {
+        "api/chat/route.ts": {
+            "maxDuration": 60,
+            "memory": 1024
+        }
+    }
+}
