@@ -87,12 +87,6 @@ const config: Config = {
                 "glow-gold": "0 0 20px rgba(251, 191, 36, 0.3)",
                 glass: "0 8px 32px 0 rgba(0, 0, 0, 0.36)",
             },
-            animation: {
-                "pulse-glow": "pulse-glow 2s ease-in-out infinite",
-                "scan-line": "scan-line 3s ease-in-out infinite",
-                "float": "float 6s ease-in-out infinite",
-                "shimmer": "shimmer 2s linear infinite",
-            },
             keyframes: {
                 "pulse-glow": {
                     "0%, 100%": { opacity: "1" },
@@ -110,6 +104,24 @@ const config: Config = {
                     "0%": { backgroundPosition: "-200% 0" },
                     "100%": { backgroundPosition: "200% 0" },
                 },
+                "gradient-xy": {
+                    "0%, 100%": {
+                        "background-size": "400% 400%",
+                        "background-position": "left center"
+                    },
+                    "50%": {
+                        "background-size": "200% 200%",
+                        "background-position": "right center"
+                    }
+                }
+            },
+            animation: {
+                "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+                "scan-line": "scan-line 3s ease-in-out infinite",
+                "float": "float 6s ease-in-out infinite",
+                "shimmer": "shimmer 2s linear infinite",
+                "spin-slow": "spin 8s linear infinite",
+                "gradient-xy": "gradient-xy 6s ease infinite",
             },
             backdropBlur: {
                 xs: "2px",
